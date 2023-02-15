@@ -1,10 +1,24 @@
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed, wait
+from functools import wraps
+from robot.api.logger import librarylogger
+from robot.api import logger
 from robot.libraries.BuiltIn import BuiltIn
 from robot.libraries.DateTime import convert_time
 from robot.running import Keyword
 from robot.running.userkeyword import UserKeywordRunner
 
+
+def only_run_on_robot_thread(func):
+    @wraps(func)
+    def inner(*args, **kwargs):
+        thread = threading.currentThread().getName()
+        if thread not in librarylogger.LOGGING_THREADS:
+            return
+
+        return func(*args, **kwargs)
+
+    return inner
 
 class AsyncLibrary:
     ROBOT_LIBRARY_SCOPE = 'GLOBAL'
@@ -17,6 +31,10 @@ class AsyncLibrary:
         self._executor = ThreadPoolExecutor()
         self._lock = threading.Lock()
 
+        writer = BuiltIn()._get_context().output._writer
+        writer.start = only_run_on_robot_thread(writer.start)
+        writer.end = only_run_on_robot_thread(writer.end)
+
     def async_run(self, keyword, *args):
         '''
         Executes the provided Robot Framework keyword in a separate thread
@@ -24,12 +42,6 @@ class AsyncLibrary:
         '''
         context = BuiltIn()._get_context()
         runner = context.get_runner(keyword)
-        if isinstance(runner, UserKeywordRunner):
-            raise ValueError(
-                'async_run cannot be used for user defined '
-                'keywords as the output xml file will get corrupted'
-            )
-
         future = self._executor.submit(
             runner.run, Keyword(keyword, args=args), context
         )
@@ -61,14 +73,34 @@ class AsyncLibrary:
             timeout = convert_time(timeout, result_format='number')
 
         with self._lock:
-            futures = list(self._future.values())
+            future = self._future
             self._future = {}
 
-        for f in list(as_completed(futures, timeout)):
+        futures = list(future.values())
+
+        result = wait(futures, timeout)
+
+        if result.not_done:
+            self._future.update({k: v for k, v in futures.items()
+                                 if v in result.not_done})
+            raise TimeoutError(
+                f'{len(result.not_done)} (of {len(futures)}) '
+                'futures unfinished'
+            )
+
+        for f in result.done:
             f.results()
+
+    def end_suite(self, suite, attributes):
+        self._close()
+
+    def end_test(self, test, attributes):
+        self._close()
 
     def _close(self):
         with self._lock:
+            if self._future:
+                logger.info('waiting for background task to finish')
             futures = list(f for f in self._future.values() if not f.cancel())
             self._future = {}
 
