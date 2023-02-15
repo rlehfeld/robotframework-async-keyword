@@ -42,5 +42,5 @@ class AsyncLibrary:
         try:
             future = self._future.pop(handle)
         except KeyError:
-            raise ValueError('entry with handle {handle} does not exist')
+            raise ValueError(f'entry with handle {handle} does not exist')
         return future.result(timeout)
