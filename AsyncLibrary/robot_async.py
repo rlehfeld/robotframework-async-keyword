@@ -1,5 +1,5 @@
 import threading
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from robot.libraries.BuiltIn import BuiltIn
 from robot.libraries.DateTime import convert_time
 from robot.running import Keyword
@@ -25,13 +25,15 @@ class AsyncLibrary:
                 'async_run cannot be used for user defined '
                 'keywords as the output xml file will get corrupted'
             )
+
+        future = self._executor.submit(
+            runner.run, Keyword(keyword, args=args), context
+        )
+
         with self._lock:
             handle = self._last_thread_handle
             self._last_thread_handle += 1
-        self._future[handle] = self._executor.submit(
-            runner.run, Keyword(keyword, args=args), context
-        )
-        return handle
+            self._future[handle] = future
 
     def async_get(self, handle, timeout=None):
         '''
@@ -44,3 +46,17 @@ class AsyncLibrary:
         except KeyError:
             raise ValueError(f'entry with handle {handle} does not exist')
         return future.result(timeout)
+
+    def async_get_all(self, timeout=None):
+        '''
+        Blocks until all futures created by async_run include a result
+        '''
+        if timeout:
+            timeout = convert_time(timeout, result_format='number')
+
+        with self._lock:
+            futures = list(self._future.values())
+            self._future = {}
+
+        for f in list(as_completed(futures, timeout)):
+            f.results()
