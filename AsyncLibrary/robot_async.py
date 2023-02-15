@@ -1,12 +1,11 @@
 import threading
-from concurrent.futures import ThreadPoolExecutor, as_completed, wait
+from concurrent.futures import ThreadPoolExecutor, wait
 from functools import wraps
 from robot.api.logger import librarylogger
 from robot.api import logger
 from robot.libraries.BuiltIn import BuiltIn
 from robot.libraries.DateTime import convert_time
 from robot.running import Keyword
-from robot.running.userkeyword import UserKeywordRunner
 
 
 def only_run_on_robot_thread(func):
@@ -19,6 +18,7 @@ def only_run_on_robot_thread(func):
         return func(*args, **kwargs)
 
     return inner
+
 
 class AsyncLibrary:
     ROBOT_LIBRARY_SCOPE = 'GLOBAL'
