@@ -1,6 +1,7 @@
 import threading
 from concurrent.futures import ThreadPoolExecutor
 from robot.libraries.BuiltIn import BuiltIn
+from robot.libraries.DateTime import convert_time
 from robot.running import Keyword
 from robot.running.userkeyword import UserKeywordRunner
 
@@ -36,6 +37,8 @@ class AsyncLibrary:
         '''
         Blocks until the future created by async_run includes a result
         '''
+        if timeout:
+            timeout = convert_time(timeout, result_format='number')
         try:
             future = self._future.pop(handle)
         except KeyError:
