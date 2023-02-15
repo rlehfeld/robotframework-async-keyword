@@ -1,5 +1,5 @@
 import threading
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, as_completed, wait
 from robot.libraries.BuiltIn import BuiltIn
 from robot.libraries.DateTime import convert_time
 from robot.running import Keyword
@@ -7,7 +7,11 @@ from robot.running.userkeyword import UserKeywordRunner
 
 
 class AsyncLibrary:
+    ROBOT_LIBRARY_SCOPE = 'GLOBAL'
+    ROBOT_LISTENER_API_VERSION = 2
+
     def __init__(self):
+        self.ROBOT_LIBRARY_LISTENER = [self]
         self._future = {}
         self._last_thread_handle = 0
         self._executor = ThreadPoolExecutor()
@@ -62,3 +66,10 @@ class AsyncLibrary:
 
         for f in list(as_completed(futures, timeout)):
             f.results()
+
+    def _close(self):
+        with self._lock:
+            futures = list(f for f in self._future.values() if not f.cancel())
+            self._future = {}
+
+        wait(futures)
