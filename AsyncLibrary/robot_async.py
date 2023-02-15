@@ -35,6 +35,8 @@ class AsyncLibrary:
             self._last_thread_handle += 1
             self._future[handle] = future
 
+        return handle
+
     def async_get(self, handle, timeout=None):
         '''
         Blocks until the future created by async_run includes a result
