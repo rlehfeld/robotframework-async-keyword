@@ -101,7 +101,7 @@ class AsyncLibrary:
     def _close(self):
         with self._lock:
             import sys
-            print('in _close', sys.stderr)
+            print('in _close', file=sys.stderr)
             futures = list(f for f in self._future.values() if not f.cancel())
             self._future = {}
 
