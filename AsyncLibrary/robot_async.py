@@ -99,10 +99,10 @@ class AsyncLibrary:
         print('in _end_suite', file=sys.stderr)
 
     def _start_suite(self, suite, attrs):
-        print('in _start_suite', file=sys.stderr)
+        logger.console('in _start_suite')
 
     def _end_suite(self, suite, attrs):
-        print('in _end_suite', file=sys.stderr)
+        logger.console('in _end_suite')
         self._close()
 
     def _close(self):
