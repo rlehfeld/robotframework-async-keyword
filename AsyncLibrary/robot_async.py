@@ -97,8 +97,6 @@ class AsyncLibrary:
 
     def _close(self):
         with self._lock:
-            if self._future:
-                logger.info('waiting for background task to finish')
             futures = list(f for f in self._future.values() if not f.cancel())
             self._future = {}
 
