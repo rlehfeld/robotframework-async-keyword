@@ -36,6 +36,7 @@ class AsyncLibrary:
         writer = getattr(xmllogger, '_writer')
         writer.start = only_run_on_robot_thread(writer.start)
         writer.end = only_run_on_robot_thread(writer.end)
+        writer.element = only_run_on_robot_thread(writer.element)
 
     def async_run(self, keyword, *args):
         '''
