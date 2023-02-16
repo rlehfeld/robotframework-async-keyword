@@ -1,3 +1,4 @@
+import sys
 import threading
 from concurrent.futures import ThreadPoolExecutor, wait
 from functools import wraps
@@ -95,13 +96,17 @@ class AsyncLibrary:
         for f in result.done:
             f.result()
 
+        print('in _end_suite', file=sys.stderr)
+
+    def _start_suite(self, suite, attrs):
+        print('in _start_suite', file=sys.stderr)
+
     def _end_suite(self, suite, attrs):
+        print('in _end_suite', file=sys.stderr)
         self._close()
 
     def _close(self):
         with self._lock:
-            import sys
-            print('in _close', file=sys.stderr)
             futures = list(f for f in self._future.values() if not f.cancel())
             self._future = {}
 
