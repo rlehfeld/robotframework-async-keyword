@@ -93,7 +93,7 @@ class AsyncLibrary:
             )
 
         for f in result.done:
-            f.results()
+            f.result()
 
     def _close(self):
         with self._lock:
