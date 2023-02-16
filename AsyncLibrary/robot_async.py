@@ -32,11 +32,12 @@ class AsyncLibrary:
         self._lock = threading.Lock()
 
         output = BuiltIn()._get_context().output
-        xmllogger = getattr(output, '_xmllogger')
-        writer = getattr(xmllogger, '_writer')
-        writer.start = only_run_on_robot_thread(writer.start)
-        writer.end = only_run_on_robot_thread(writer.end)
-        writer.element = only_run_on_robot_thread(writer.element)
+        xmllogger = getattr(output, '_xmllogger', None)
+        writer = getattr(xmllogger, '_writer', None)
+        if writer:
+            writer.start = only_run_on_robot_thread(writer.start)
+            writer.end = only_run_on_robot_thread(writer.end)
+            writer.element = only_run_on_robot_thread(writer.element)
 
     def async_run(self, keyword, *args):
         '''
@@ -93,12 +94,6 @@ class AsyncLibrary:
 
         for f in result.done:
             f.results()
-
-    def end_suite(self, suite, attributes):
-        self._close()
-
-    def end_test(self, test, attributes):
-        self._close()
 
     def _close(self):
         with self._lock:
