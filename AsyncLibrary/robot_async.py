@@ -47,7 +47,9 @@ class AsyncLibrary:
         self._lock = threading.Lock()
 
         context = BuiltIn()._get_context()
-        context.user_keyword.gen = raise_on_call_in_wrong_thread(context.user_keyword.gen)
+        context.user_keyword.gen = raise_on_call_in_wrong_thread(
+            context.user_keyword.gen
+        )
 
         output = getattr(context, 'output', None)
         xmllogger = getattr(output, '_xmllogger', None)
