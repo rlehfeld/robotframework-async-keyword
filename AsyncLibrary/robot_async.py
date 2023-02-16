@@ -21,7 +21,7 @@ def only_run_on_robot_thread(func):
 
 
 class AsyncLibrary:
-    ROBOT_LIBRARY_SCOPE = 'SUITE'
+    ROBOT_LIBRARY_SCOPE = 'GLOBAL'
     ROBOT_LISTENER_API_VERSION = 2
 
     def __init__(self):
@@ -94,6 +94,9 @@ class AsyncLibrary:
 
         for f in result.done:
             f.result()
+
+    def _end_suite(self, suite, attrs):
+        self._close()
 
     def _close(self):
         with self._lock:
