@@ -32,8 +32,8 @@ class AsyncLibrary:
         self._lock = threading.Lock()
 
         output = BuiltIn()._get_context().output
-        xml_logger_proxy = getattr(output, '_xml_logger', None)
-        xml_logger = getattr(xml_logger_proxy, 'logger', None)
+        xml_logger_proxy = getattr(output, '_xml_logger')
+        xml_logger = getattr(xml_logger_proxy, 'logger')
 
         # TODO: add default later on and if statement before patching
         writer = getattr(xml_logger, '_writer')
