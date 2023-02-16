@@ -21,7 +21,7 @@ def only_run_on_robot_thread(func):
     return inner
 
 
-def raise_on_call_in_wrong_thread(func):
+def must_be_run_in_robot_thread(func):
     @wraps(func)
     def inner(*args, **kwargs):
         thread = threading.currentThread().getName()
@@ -47,8 +47,8 @@ class AsyncLibrary:
         self._lock = threading.Lock()
 
         context = BuiltIn()._get_context()
-        context.user_keyword.func = raise_on_call_in_wrong_thread(
-            context.user_keyword.func
+        context.user_keyword = must_be_run_in_robot_thread(
+            context.user_keyword
         )
 
         output = getattr(context, 'output', None)
