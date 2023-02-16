@@ -21,7 +21,7 @@ def only_run_on_robot_thread(func):
 
 
 class AsyncLibrary:
-    ROBOT_LIBRARY_SCOPE = 'GLOBAL'
+    ROBOT_LIBRARY_SCOPE = 'SUITE'
     ROBOT_LISTENER_API_VERSION = 2
 
     def __init__(self):
@@ -97,6 +97,8 @@ class AsyncLibrary:
 
     def _close(self):
         with self._lock:
+            import sys
+            print('in _close', sys.stderr)
             futures = list(f for f in self._future.values() if not f.cancel())
             self._future = {}
 
