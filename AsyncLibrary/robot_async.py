@@ -1,9 +1,7 @@
-import sys
 import threading
 from concurrent.futures import ThreadPoolExecutor, wait
 from functools import wraps
 from robot.api.logger import librarylogger
-from robot.api import logger
 from robot.libraries.BuiltIn import BuiltIn
 from robot.libraries.DateTime import convert_time
 from robot.running import Keyword
@@ -119,7 +117,6 @@ class AsyncLibrary:
         self._wait_all()
 
     def _close(self):
-        logger.console('in _close')
         self._wait_all()
 
     def _wait_all(self):
