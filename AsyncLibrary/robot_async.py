@@ -22,17 +22,18 @@ def only_run_on_robot_thread(func):
 
 
 def raise_on_call_in_wrong_thread(func):
-    @wraps(func)
-    def inner(*args, **kwargs):
+    enter = func.__enter__
+    @wraps(enter)
+    def inner(self):
         thread = threading.currentThread().getName()
         if thread not in librarylogger.LOGGING_THREADS:
             raise RuntimeError(
                 'Must be used only from robot framework threads.'
             )
 
-        return func(*args, **kwargs)
+        return enter(self)
 
-    return inner
+    func.__enter__ = inner
 
 
 class AsyncLibrary:
@@ -47,9 +48,7 @@ class AsyncLibrary:
         self._lock = threading.Lock()
 
         context = BuiltIn()._get_context()
-        context.user_keyword.gen = raise_on_call_in_wrong_thread(
-            context.user_keyword.gen
-        )
+        raise_on_call_in_wrong_thread(context.user_keyword)
 
         output = getattr(context, 'output', None)
         xmllogger = getattr(output, '_xmllogger', None)
