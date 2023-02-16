@@ -21,8 +21,22 @@ def only_run_on_robot_thread(func):
     return inner
 
 
+def raise_on_call_in_wrong_thread(func):
+    @wraps(func)
+    def inner(*args, **kwargs):
+        thread = threading.currentThread().getName()
+        if thread not in librarylogger.LOGGING_THREADS:
+            raise RuntimeError(
+                'Must be used only from robot framework threads.'
+            )
+
+        return func(*args, **kwargs)
+
+    return inner
+
+
 class AsyncLibrary:
-    ROBOT_LIBRARY_SCOPE = 'GLOBAL'
+    ROBOT_LIBRARY_SCOPE = 'SUITE'
     ROBOT_LISTENER_API_VERSION = 2
 
     def __init__(self):
@@ -32,7 +46,10 @@ class AsyncLibrary:
         self._executor = ThreadPoolExecutor()
         self._lock = threading.Lock()
 
-        output = BuiltIn()._get_context().output
+        context = BuiltIn()._get_context()
+        context.user_keyword.gen = raise_on_call_in_wrong_thread(context.user_keyword.gen)
+
+        output = getattr(context, 'output', None)
         xmllogger = getattr(output, '_xmllogger', None)
         writer = getattr(xmllogger, '_writer', None)
         if writer:
@@ -96,16 +113,14 @@ class AsyncLibrary:
         for f in result.done:
             f.result()
 
-        print('in _end_suite', file=sys.stderr)
-
-    def _start_suite(self, suite, attrs):
-        logger.console('in _start_suite')
-
     def _end_suite(self, suite, attrs):
-        logger.console('in _end_suite')
-        self._close()
+        self._wait_all()
 
     def _close(self):
+        logger.console('in _close')
+        self._wait_all()
+
+    def _wait_all(self):
         with self._lock:
             futures = list(f for f in self._future.values() if not f.cancel())
             self._future = {}
