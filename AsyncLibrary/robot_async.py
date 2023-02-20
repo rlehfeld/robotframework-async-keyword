@@ -23,13 +23,20 @@ def only_run_on_robot_thread(func):
 class ScopedContext:
     _attributes = [
         ['user_keywords'],
+        ['step_types'],
+        ['timeout_occurred'],
         ['namespace', 'variables', '_scopes'],
         ['namespace', 'variables', '_variables_set', '_scopes'],
+        ['_started_keywords'],
+        ['in_suite_teardown'],
         ['in_test_teardown'],
         ['in_keyword_teardown'],
     ]
 
     _construct = {
+        '_started_keywords': 0,
+        'timeout_occurred': False,
+        'in_suite_teardown': False,
         'in_test_teardown': False,
         'in_keyword_teardown': 0,
     }
