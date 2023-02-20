@@ -77,8 +77,9 @@ class ScopedContext:
         self.activate()
         return self
 
-    def __exit__(self ,type, value, traceback):
+    def __exit__(self, exc_type, exc_val, exc_tb):
         self.kill()
+
 
 class AsyncLibrary:
     ROBOT_LIBRARY_SCOPE = 'SUITE'
@@ -173,8 +174,13 @@ class AsyncLibrary:
         self._wait_all()
 
     def _wait_all(self):
+        futures = []
         with self._lock:
-            futures = list(f for f in self._future.values() if not f.cancel())
+            for f in self._future.values():
+                if f.cancel():
+                    f._scope.kill()
+                else:
+                    futures.append(f)
             self._future = {}
 
         wait(futures)

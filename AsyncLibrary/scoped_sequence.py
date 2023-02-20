@@ -22,7 +22,7 @@ class ScopedSequence(collections.abc.MutableSequence):
 
     def kill(self, id=-1):
         if id is None:
-            raise RuntimeError(f'default scope cannot be killed')
+            raise RuntimeError('default scope cannot be killed')
         if id < 0:
             id = self.scope
         with self.lock:
