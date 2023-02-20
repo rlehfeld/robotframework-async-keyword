@@ -1,7 +1,7 @@
 import threading
 from concurrent.futures import ThreadPoolExecutor, wait
 from functools import wraps
-from .scoped_sequence import ScopedSequence
+from .scoped_value import ScopedValue, ScopedDescriptor
 from robot.api.logger import librarylogger
 from robot.libraries.BuiltIn import BuiltIn
 from robot.libraries.DateTime import convert_time
@@ -20,25 +20,13 @@ def only_run_on_robot_thread(func):
     return inner
 
 
-def must_be_run_in_robot_thread(func):
-    @wraps(func)
-    def inner(*args, **kwargs):
-        thread = threading.currentThread().getName()
-        if thread not in librarylogger.LOGGING_THREADS:
-            raise RuntimeError(
-                'Must be used only from robot framework threads.'
-            )
-
-        return func(*args, **kwargs)
-
-    return inner
-
-
 class ScopedContext:
     _attributes = [
         ['user_keywords'],
         ['namespace', 'variables', '_scopes'],
         ['namespace', 'variables', '_variables_set', '_scopes'],
+        ['in_test_teardown'],
+        ['in_keyword_teardown'],
     ]
 
     def __init__(self):
@@ -49,28 +37,44 @@ class ScopedContext:
             for p in a:
                 parent = current
                 current = getattr(parent, p)
-            if not isinstance(current, ScopedSequence):
-                current = ScopedSequence(current)
-                setattr(parent, p, current)
-            self._forks.append(current.fork())
+            try:
+                scope = getattr(parent, f'_scoped_{p}')
+            except AttributeError:
+                scope = None
+            finally:
+                if not isinstance(scope, ScopedValue):
+                    scope = ScopedValue(current)
+                    setattr(parent, f'_scoped_{p}', scope)
+                    delattr(parent, p)
+
+                    class Patched(parent.__class__):
+                        pass
+
+                    setattr(Patched, p, ScopedDescriptor(f'_scoped_{p}'))
+                    parent.__class__ = Patched
+
+            self._forks.append(scope.fork())
 
     def activate(self):
         forks = self._forks
+
         for a, c in zip(self._attributes, forks):
             current = self._context
-            for p in a:
+            for p in a[0:-1]:
                 current = getattr(current, p)
-            current.activate(c)
+            scope = getattr(current, f'_scoped_{a[-1]}')
+            scope.activate(c)
 
     def kill(self):
         forks = self._forks
         self._forks = []
         for a, c in zip(self._attributes, forks):
-            current = self._context
-            for p in a:
-                current = getattr(current, p)
             if c is not None:
-                current.kill(c)
+                current = self._context
+                for p in a[0:-1]:
+                    current = getattr(current, p)
+                scope = getattr(current, f'_scoped_{a[-1]}')
+                scope.kill(c)
             self._forks.append(None)
 
     def __enter__(self):
@@ -93,10 +97,6 @@ class AsyncLibrary:
         self._lock = threading.Lock()
 
         context = BuiltIn()._get_context()
-        context.user_keyword = must_be_run_in_robot_thread(
-            context.user_keyword
-        )
-
         output = getattr(context, 'output', None)
         xmllogger = getattr(output, '_xmllogger', None)
         writer = getattr(xmllogger, '_writer', None)
