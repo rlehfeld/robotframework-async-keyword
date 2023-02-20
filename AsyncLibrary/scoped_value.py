@@ -2,31 +2,39 @@ import threading
 
 
 class ScopedValue:
-    def __init__(self, default):
-        self.scopeid = threading.local()
-        self.scopes = {None: default}
-        self.lock = threading.Lock()
-        self.next = 0
+    def __init__(self, **kwargs):
+        self._scopeid = threading.local()
+        try:
+            self._scopes = {None: kwargs.pop('default')}
+        except KeyError:
+            self._scopes = {}
+        try:
+            self._forkvalue = kwargs.pop('forkvalue')
+        except KeyError:
+            pass
+        if kwargs:
+            raise TypeError('got unexpected keyword argument(s)')
+        self._lock = threading.Lock()
+        self._next = 0
 
     @property
     def scope(self):
-        return getattr(self.scopeid, 'value', None)
+        return getattr(self._scopeid, 'value', None)
 
     def fork(self):
-        with self.lock:
-            id = self.next
+        with self._lock:
+            id = self._next
             try:
-                copy = getattr(self.scopes[self.scope], 'copy')
+                value = getattr(self, '_forkvalue')
             except AttributeError:
-                value = self.scopes[self.scope]
-                if isinstance(value, bool):
-                    value = False
-                elif isinstance(value, int):
-                    value = 0
-            else:
-                value = copy()
-            self.scopes[id] = value
-            self.next += 1
+                try:
+                    copy = getattr(self._scopes[self.scope], 'copy')
+                except AttributeError:
+                    value = self._scopes[self.scope]
+                else:
+                    value = copy()
+            self._scopes[id] = value
+            self._next += 1
             return id
 
     def kill(self, id=-1):
@@ -34,32 +42,32 @@ class ScopedValue:
             raise RuntimeError('default scope cannot be killed')
         if id < 0:
             id = self.scope
-        with self.lock:
-            self.scopes.pop(id)
+        with self._lock:
+            self._scopes.pop(id)
 
         try:
             if self.scope == id:
-                del self.scopeid.value
+                del self._scopeid.value
         except AttributeError:
             pass
 
     def activate(self, id):
-        with self.lock:
+        with self._lock:
             if id is None:
                 try:
-                    del self.scopeid.value
+                    del self._scopeid.value
                 except AttributeError:
                     pass
-            elif id in self.scopes:
-                self.scopeid.value = id
+            elif id in self._scopes:
+                self._scopeid.value = id
             else:
                 raise RuntimeError(f'a fork with {id=} does not exist')
 
     def get(self):
-        return self.scopes[self.scope]
+        return self._scopes[self.scope]
 
     def set(self, value):
-        self.scopes[self.scope] = value
+        self._scopes[self.scope] = value
 
 
 class ScopedDescriptor:
@@ -69,7 +77,15 @@ class ScopedDescriptor:
     def __get__(self, instance, owner=None):
         if instance is None:
             return self
-        return getattr(instance, self._attribute).get()
+        return self.instance(instance).get()
 
     def __set__(self, instance, value):
-        return getattr(instance, self._attribute).set(value)
+        return self.instance(instance).set(value)
+
+    def instance(self, instance):
+        try:
+            return getattr(instance, self._attribute)
+        except AttributeError:
+            scope = ScopedValue()
+            setattr(instance, self._attribute, scope)
+            return scope

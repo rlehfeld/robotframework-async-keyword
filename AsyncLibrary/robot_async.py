@@ -29,6 +29,11 @@ class ScopedContext:
         ['in_keyword_teardown'],
     ]
 
+    _construct = {
+        'in_test_teardown': False,
+        'in_keyword_teardown': 0,
+    }
+
     def __init__(self):
         self._context = BuiltIn()._get_context()
         self._forks = []
@@ -43,15 +48,20 @@ class ScopedContext:
                 scope = None
             finally:
                 if not isinstance(scope, ScopedValue):
-                    scope = ScopedValue(current)
+                    kwargs = {'default': current}
+                    if p in self._construct:
+                        kwargs['forkvalue'] = self._construct[p]
+                    scope = ScopedValue(**kwargs)
                     setattr(parent, f'_scoped_{p}', scope)
                     delattr(parent, p)
 
-                    class Patched(parent.__class__):
+                    class PatchedClass(parent.__class__):
                         pass
 
-                    setattr(Patched, p, ScopedDescriptor(f'_scoped_{p}'))
-                    parent.__class__ = Patched
+                    setattr(PatchedClass, p, ScopedDescriptor(f'_scoped_{p}'))
+                    PatchedClass.__name__ = parent.__class__.__name__
+                    PatchedClass.__doc__ = parent.__class__.__doc__
+                    parent.__class__ = PatchedClass
 
             self._forks.append(scope.fork())
 
