@@ -46,7 +46,7 @@ class ScopedSequence(collections.abc.MutableSequence):
             else:
                 raise RuntimeError(f'a fork with {id=} does not exist')
 
-    def __get__(self):
+    def get(self):
         return self.scopes[self.scope]
 
     def __getitem__(self, index):
@@ -83,10 +83,20 @@ class ScopedSequence(collections.abc.MutableSequence):
         return self.scopes[self.scope].append(value)
 
     def extend(self, values):
+        if isinstance(values, ScopedSequence):
+            values = values.get()
         return self.scopes[self.scope].extend(values)
 
+    def __add__(self, values):
+        if isinstance(values, ScopedSequence):
+            values = values.get()
+        return self.scopes[self.scope].__add__(values)
+
     def __iadd__(self, values):
-        return self.scopes[self.scope].__iadd__(values)
+        if isinstance(values, ScopedSequence):
+            values = values.get()
+        self.scopes[self.scope] = self.scopes[self.scope].__iadd__(values)
+        return self
 
     def pop(self, index=-1):
         return self.scopes[self.scope].pop(index)
