@@ -5,9 +5,19 @@ class ScopedValue:
     def __init__(self, **kwargs):
         self._scopeid = threading.local()
         try:
-            self._scopes = {None: kwargs.pop('default')}
+            default = kwargs.pop('default')
         except KeyError:
             self._scopes = {}
+        else:
+            self._scopes = {None: default}
+            try:
+                self.__name__ = default.__name__
+            except AttributeError:
+                pass
+            try:
+                self.__doc__ = default.__doc__
+            except AttributeError:
+                pass
         try:
             self._forkvalue = kwargs.pop('forkvalue')
         except KeyError:
