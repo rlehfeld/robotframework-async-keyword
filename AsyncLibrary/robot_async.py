@@ -1,6 +1,7 @@
 import threading
 from concurrent.futures import ThreadPoolExecutor, wait
 from functools import wraps
+from .scoped_sequence import ScopedSequence
 from robot.api.logger import librarylogger
 from robot.libraries.BuiltIn import BuiltIn
 from robot.libraries.DateTime import convert_time
@@ -33,6 +34,52 @@ def must_be_run_in_robot_thread(func):
     return inner
 
 
+class ScopedContext:
+    _attributes = [
+        ['user_keywords'],
+        ['namespace', 'variables', '_scopes'],
+        ['namespace', 'variables', '_variables_set', '_scopes'],
+    ]
+
+    def __init__(self):
+        self._context = BuiltIn()._get_context()
+        self._forks = []
+        for a in self._attributes:
+            current = self._context
+            for p in a:
+                parent = current
+                current = getattr(parent, p)
+            if not isinstance(current, ScopedSequence):
+                current = ScopedSequence(current)
+                setattr(parent, p, current)
+            self._forks.append(current.fork())
+
+    def activate(self):
+        forks = self._forks
+        for a, c in zip(self._attributes, forks):
+            current = self._context
+            for p in a:
+                current = getattr(current, p)
+            current.activate(c)
+
+    def kill(self):
+        forks = self._forks
+        self._forks = []
+        for a, c in zip(self._attributes, forks):
+            current = self._context
+            for p in a:
+                current = getattr(current, p)
+            if c is not None:
+                current.kill(c)
+            self._forks.append(None)
+
+    def __enter__(self):
+        self.activate()
+        return self
+
+    def __exit__(self ,type, value, traceback):
+        self.kill()
+
 class AsyncLibrary:
     ROBOT_LIBRARY_SCOPE = 'SUITE'
     ROBOT_LISTENER_API_VERSION = 2
@@ -57,6 +104,10 @@ class AsyncLibrary:
             writer.end = only_run_on_robot_thread(writer.end)
             writer.element = only_run_on_robot_thread(writer.element)
 
+    def _run(self, scope, fn, *args, **kwargs):
+        with scope:
+            return fn(*args, **kwargs)
+
     def async_run(self, keyword, *args):
         '''
         Executes the provided Robot Framework keyword in a separate thread
@@ -64,9 +115,11 @@ class AsyncLibrary:
         '''
         context = BuiltIn()._get_context()
         runner = context.get_runner(keyword)
+        scope = ScopedContext()
         future = self._executor.submit(
-            runner.run, Keyword(keyword, args=args), context
+            self._run, scope, runner.run, Keyword(keyword, args=args), context
         )
+        future._scope = scope
 
         with self._lock:
             handle = self._last_thread_handle
