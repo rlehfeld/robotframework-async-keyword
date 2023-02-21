@@ -1,3 +1,4 @@
+import signal
 import threading
 from concurrent.futures import ThreadPoolExecutor, wait
 from functools import wraps
@@ -11,13 +12,36 @@ from robot.running import Keyword
 def only_run_on_robot_thread(func):
     @wraps(func)
     def inner(*args, **kwargs):
-        thread = threading.currentThread().getName()
+        thread = threading.currentThread().name
         if thread not in librarylogger.LOGGING_THREADS:
             return
 
         return func(*args, **kwargs)
 
     return inner
+
+
+class BlockSignals:
+    def __init__(self):
+        try:
+            self._sigmask = getattr(signal, 'pthread_sigmask')
+        except AttributeError:
+            self._sigmask = None
+
+    def __enter__(self):
+        if self._sigmask:
+            self._current = self._sigmask(
+                signal.SIG_BLOCK,
+                [
+                    signal.SIGTERM,
+                    signal.SIGINT,
+                ]
+            )
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if self._sigmask:
+            self._sigmask(signal.SIG_SETMASK, self._current)
 
 
 class ScopedContext:
@@ -110,7 +134,8 @@ class AsyncLibrary:
         self.ROBOT_LIBRARY_LISTENER = [self]
         self._future = {}
         self._last_thread_handle = 0
-        self._executor = ThreadPoolExecutor()
+        with BlockSignals():
+            self._executor = ThreadPoolExecutor()
         self._lock = threading.Lock()
 
         context = BuiltIn()._get_context()
@@ -134,9 +159,11 @@ class AsyncLibrary:
         context = BuiltIn()._get_context()
         runner = context.get_runner(keyword)
         scope = ScopedContext()
-        future = self._executor.submit(
-            self._run, scope, runner.run, Keyword(keyword, args=args), context
-        )
+        with BlockSignals():
+            future = self._executor.submit(
+                self._run, scope,
+                runner.run, Keyword(keyword, args=args), context
+            )
         future._scope = scope
 
         with self._lock:
@@ -153,7 +180,8 @@ class AsyncLibrary:
         if timeout:
             timeout = convert_time(timeout, result_format='number')
         try:
-            future = self._future.pop(handle)
+            with self._lock:
+                future = self._future.pop(handle)
         except KeyError:
             raise ValueError(f'entry with handle {handle} does not exist')
         return future.result(timeout)
@@ -174,15 +202,15 @@ class AsyncLibrary:
         result = wait(futures, timeout)
 
         if result.not_done:
-            self._future.update({k: v for k, v in futures.items()
-                                 if v in result.not_done})
+            with self._lock:
+                self._future.update({k: v for k, v in futures.items()
+                                     if v in result.not_done})
             raise TimeoutError(
                 f'{len(result.not_done)} (of {len(futures)}) '
                 'futures unfinished'
             )
 
-        for f in result.done:
-            f.result()
+        return [f.result() for f in result.done]
 
     def _end_suite(self, suite, attrs):
         self._wait_all()

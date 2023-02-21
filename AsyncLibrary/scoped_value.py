@@ -74,10 +74,12 @@ class ScopedValue:
                 raise RuntimeError(f'a fork with {id=} does not exist')
 
     def get(self):
-        return self._scopes[self.scope]
+        with self._lock:
+            return self._scopes[self.scope]
 
     def set(self, value):
-        self._scopes[self.scope] = value
+        with self._lock:
+            self._scopes[self.scope] = value
 
 
 class ScopedDescriptor:
