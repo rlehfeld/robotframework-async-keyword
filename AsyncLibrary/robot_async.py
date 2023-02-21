@@ -1,8 +1,10 @@
 import signal
 import threading
+import traceback
 from concurrent.futures import ThreadPoolExecutor, wait
 from functools import wraps
 from .scoped_value import ScopedValue, ScopedDescriptor
+from robot.api import logger
 from robot.api.logger import librarylogger
 from robot.libraries.BuiltIn import BuiltIn
 from robot.libraries.DateTime import convert_time
@@ -124,6 +126,12 @@ class ScopedContext:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.kill()
+        if exc_type:
+            tb = traceback.TracebackException(
+                exc_type, exc_val, exc_tb
+            )
+            for s in tb.format():
+                logger.console(s)
 
 
 class AsyncLibrary:
