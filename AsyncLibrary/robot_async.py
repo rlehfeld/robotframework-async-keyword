@@ -189,6 +189,7 @@ class AsyncLibrary:
 
     def _close(self):
         self._wait_all()
+        self._executor.shutdown()
 
     def _wait_all(self):
         futures = []
