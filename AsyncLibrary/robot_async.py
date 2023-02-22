@@ -208,9 +208,8 @@ class AsyncLibrary:
         self._lock = threading.Lock()
 
     def _run(self, scope, postpone_id, fn, *args, **kwargs):
-        with POSTPONE(postpone_id):
-            with scope:
-                return fn(*args, **kwargs)
+        with POSTPONE(postpone_id), scope:
+            return fn(*args, **kwargs)
 
     def async_run(self, keyword, *args):
         '''
