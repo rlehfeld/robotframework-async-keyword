@@ -162,7 +162,7 @@ class AsyncLibrary:
     def async_run(self, keyword, *args):
         '''
         Executes the provided Robot Framework keyword in a separate thread
-        and immediately returns a handle to be used with async_get
+        and immediately returns a handle to be used with _*Async Get*_
         '''
         context = BuiltIn()._get_context()
         runner = context.get_runner(keyword)
@@ -183,7 +183,7 @@ class AsyncLibrary:
 
     def async_get(self, handle, timeout=None):
         '''
-        Blocks until the future created by async_run includes a result
+        Blocks until the keyword spawned by _*Async Run*_ includes a result
         '''
         if timeout:
             timeout = convert_time(timeout, result_format='number')
@@ -196,7 +196,7 @@ class AsyncLibrary:
 
     def async_get_all(self, timeout=None):
         '''
-        Blocks until all futures created by async_run include a result
+        Blocks until all keywords spawned by _*Async Run*_ include a result
         '''
         if timeout:
             timeout = convert_time(timeout, result_format='number')
