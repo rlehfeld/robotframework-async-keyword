@@ -14,7 +14,7 @@ from robot.running.statusreporter import StatusReporter
 def PatchExit(func):
     @wraps(func)
     def inner(this, exc_type, exc_val, exc_tb):
-        if exc_type and exc_type is RuntimeError:
+        if exc_type and issubclass(exc_type, RuntimeError):
             tb = traceback.TracebackException(
                 exc_type, exc_val, exc_tb
             )
