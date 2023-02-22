@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name = "robotframework-async",
-    version = "1.0.5.dev2",
+    version = "1.0.5.dev3",
     description = "Generic Robot Framework library for asynchronous keyword execution",
     author = "René Lehfeld",
     author_email = "54720674+rlehfeld@users.noreply.github.com",
@@ -20,5 +20,5 @@ setup(
         "Intended Audience :: Developers",
         "Operating System :: OS Independent",
         "Topic :: Software Development :: Libraries :: Python Modules",
-        ]
+    ]
 )

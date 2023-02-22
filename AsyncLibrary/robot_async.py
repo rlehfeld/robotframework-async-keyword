@@ -5,22 +5,83 @@ from concurrent.futures import ThreadPoolExecutor, wait
 from functools import wraps
 from .scoped_value import ScopedValue, ScopedDescriptor
 from robot.api import logger
-from robot.api.logger import librarylogger
 from robot.libraries.BuiltIn import BuiltIn
 from robot.libraries.DateTime import convert_time
 from robot.running import Keyword
 
 
-def only_run_on_robot_thread(func):
-    @wraps(func)
-    def inner(*args, **kwargs):
-        thread = threading.currentThread().name
-        if thread not in librarylogger.LOGGING_THREADS:
-            return
+class Postpone:
+    def __init__(self):
+        self._lock = threading.Lock()
+        self._postponed = {}
+        self._id = threading.local()
+        self._next = 0
 
-        return func(*args, **kwargs)
+        context = BuiltIn()._get_context()
+        output = getattr(context, 'output', None)
+        xmllogger = getattr(output, '_xmllogger', None)
+        writer = getattr(xmllogger, '_writer', None)
+        if writer:
+            writer.start = self.decorator(writer.start)
+            writer.end = self.decorator(writer.end)
+            writer.element = self.decorator(writer.element)
 
-    return inner
+    def fork(self):
+        with self._lock:
+            postpone_id = self._next
+            self._next += 1
+        return postpone_id
+
+    def activate(self, postpone_id):
+        with self._lock:
+            self._postponed[postpone_id] = []
+        self._id.value = postpone_id
+
+    def deactivate(self):
+        del self._id.value
+
+    def get(self):
+        try:
+            return getattr(self._id, 'value')
+        except AttributeError:
+            return None
+
+    def decorator(self, func):
+        @wraps(func)
+        def inner(*args, **kwargs):
+            postpone_id = self.get()
+            if postpone_id is None:
+                return func(*args, **kwargs)
+
+            else:
+                with self._lock:
+                    self._postponed[postpone_id].append([
+                        func, list(args), dict(kwargs)
+                    ])
+
+        return inner
+
+    def replay(self, postpone_id):
+        while True:
+            with self._lock:
+                try:
+                    func = self._postponed[postpone_id].pop(0)
+                except IndexError:
+                    break
+            func[0](*func[1], **func[2])
+
+    def __call__(self, postpone_id):
+        self.activate(postpone_id)
+        return self
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.deactivate()
+
+
+POSTPONE = Postpone()
 
 
 class BlockSignals:
@@ -146,18 +207,10 @@ class AsyncLibrary:
             self._executor = ThreadPoolExecutor()
         self._lock = threading.Lock()
 
-        context = BuiltIn()._get_context()
-        output = getattr(context, 'output', None)
-        xmllogger = getattr(output, '_xmllogger', None)
-        writer = getattr(xmllogger, '_writer', None)
-        if writer:
-            writer.start = only_run_on_robot_thread(writer.start)
-            writer.end = only_run_on_robot_thread(writer.end)
-            writer.element = only_run_on_robot_thread(writer.element)
-
-    def _run(self, scope, fn, *args, **kwargs):
-        with scope:
-            return fn(*args, **kwargs)
+    def _run(self, scope, postpone_id, fn, *args, **kwargs):
+        with POSTPONE(postpone_id):
+            with scope:
+                return fn(*args, **kwargs)
 
     def async_run(self, keyword, *args):
         '''
@@ -167,13 +220,15 @@ class AsyncLibrary:
         context = BuiltIn()._get_context()
         runner = context.get_runner(keyword)
         scope = ScopedContext()
+        postpone_id = POSTPONE.fork()
+
         with BlockSignals():
             future = self._executor.submit(
-                self._run, scope,
+                self._run, scope, postpone_id,
                 runner.run, Keyword(keyword, args=args), context
             )
         future._scope = scope
-
+        future._postpone_id = postpone_id
         with self._lock:
             handle = self._last_thread_handle
             self._last_thread_handle += 1
@@ -224,6 +279,10 @@ class AsyncLibrary:
                 )
             )
 
+        for f in result.done:
+            if not f.exception():
+                POSTPONE.replay(f._postpone_id)
+
         if exceptions:
             raise exceptions[-1]
             # TODO: with Python 3.11 use ExceptionGroup
@@ -256,6 +315,7 @@ class AsyncLibrary:
                     f._scope.kill()
                 else:
                     futures.append(f)
+                    POSTPONE.replay(futures._postpone_id)
             self._future.clear()
 
         wait(futures)
