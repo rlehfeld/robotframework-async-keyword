@@ -279,8 +279,10 @@ class AsyncLibrary:
                 )
             )
 
-        for f in result.done:
-            POSTPONE.replay(f._postpone_id)
+        for h in handles:
+            f = future[h]
+            if f in result.done:
+                POSTPONE.replay(f._postpone_id)
 
         if exceptions:
             raise exceptions[-1]
