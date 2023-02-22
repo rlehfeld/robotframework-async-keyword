@@ -8,6 +8,25 @@ from robot.api import logger
 from robot.libraries.BuiltIn import BuiltIn
 from robot.libraries.DateTime import convert_time
 from robot.running import Keyword
+from robot.running.statusreporter import StatusReporter
+
+
+def PatchExit(func):
+    @wraps(func)
+    def inner(this, exc_type, exc_val, exc_tb):
+        if exc_type and exc_type is RuntimeError:
+            tb = traceback.TracebackException(
+                exc_type, exc_val, exc_tb
+            )
+            for s in tb.format():
+                logger.console(s)
+
+        return func(this, exc_type, exc_val, exc_tb)
+
+    return inner
+
+
+StatusReporter.__exit__ = PatchExit(StatusReporter.__exit__)
 
 
 class Postpone:
@@ -187,12 +206,6 @@ class ScopedContext:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.kill()
-        if exc_type:
-            tb = traceback.TracebackException(
-                exc_type, exc_val, exc_tb
-            )
-            for s in tb.format():
-                logger.console(s)
 
 
 class AsyncLibrary:
