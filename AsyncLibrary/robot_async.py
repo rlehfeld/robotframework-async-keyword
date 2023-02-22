@@ -280,8 +280,7 @@ class AsyncLibrary:
             )
 
         for f in result.done:
-            if not f.exception():
-                POSTPONE.replay(f._postpone_id)
+            POSTPONE.replay(f._postpone_id)
 
         if exceptions:
             raise exceptions[-1]
@@ -315,7 +314,9 @@ class AsyncLibrary:
                     f._scope.kill()
                 else:
                     futures.append(f)
-                    POSTPONE.replay(futures._postpone_id)
             self._future.clear()
 
         wait(futures)
+
+        for f in futures:
+            POSTPONE.replay(f._postpone_id)
