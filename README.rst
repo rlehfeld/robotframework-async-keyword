@@ -2,10 +2,8 @@ Generic Robot Framework library for asynchronous keyword execution
 
 Installation
 ============
-If you have pip installed:
-``pip install robotframework-async``
-
-Alternatively download directly from the Python Package Index: https://pypi.python.org/pypi/robotframework-async
+If you have pip and git installed:
+``pip install git+https://github.com/rlehfeld/robotframework-async.git``
 
 Usage
 =====
