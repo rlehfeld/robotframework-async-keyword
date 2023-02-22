@@ -181,44 +181,65 @@ class AsyncLibrary:
 
         return handle
 
-    def async_get(self, handle, timeout=None):
+    def async_get(self, handle=None, timeout=None):
         '''
-        Blocks until the keyword spawned by _*Async Run*_ includes a result
-        '''
-        if timeout:
-            timeout = convert_time(timeout, result_format='number')
-        try:
-            with self._lock:
-                future = self._future.pop(handle)
-        except KeyError:
-            raise ValueError(f'entry with handle {handle} does not exist')
-        return future.result(timeout)
-
-    def async_get_all(self, timeout=None):
-        '''
-        Blocks until all keywords spawned by _*Async Run*_ include a result
+        Blocks until the keyword(s) spawned by _*Async Run*_ include a result.
         '''
         if timeout:
             timeout = convert_time(timeout, result_format='number')
 
+        future = {}
+        retlist = True
         with self._lock:
-            future = self._future
-            self._future = {}
+            if handle is None:
+                handles = list(self._future.keys())
+            else:
+                try:
+                    handles = list(handle)
+                except TypeError:
+                    handles = [handle]
+                    retlist = False
+            for h in handles:
+                future[h] = self._future[h]
+            for h in handles:
+                # in two steps so that no future get lost
+                # in case of an error
+                self._future.pop(h)
 
-        futures = list(future.values())
+        result = wait(future.values(), timeout)
 
-        result = wait(futures, timeout)
+        exceptions = [e for e in (
+            future[h].exception() for h in handles
+            if future[h] in result.done
+        ) if e]
 
         if result.not_done:
             with self._lock:
-                self._future.update({k: v for k, v in futures.items()
+                self._future.update({k: v for k, v in future.items()
                                      if v in result.not_done})
-            raise TimeoutError(
-                f'{len(result.not_done)} (of {len(futures)}) '
-                'futures unfinished'
+            exceptions.append(
+                TimeoutError(
+                    f'{len(result.not_done)} (of {len(future)}) '
+                    'futures unfinished'
+                )
             )
 
-        return [f.result() for f in result.done]
+        if exceptions:
+            raise exceptions[-1]
+            # TODO: with Python 3.11 use ExceptionGroup
+            #       currently still stuck with Python 3.9
+
+        ret = [future[h].result() for h in handles]
+
+        if retlist:
+            return ret
+        return ret[-1]
+
+    def async_get_all(self, timeout=None):
+        '''
+        Blocks until the keyword spawned by _*Async Run*_ include a result.
+        '''
+        return self.async_get(timeout=timeout)
 
     def _end_suite(self, suite, attrs):
         self._wait_all()
@@ -235,6 +256,6 @@ class AsyncLibrary:
                     f._scope.kill()
                 else:
                     futures.append(f)
-            self._future = {}
+            self._future.clear()
 
         wait(futures)
