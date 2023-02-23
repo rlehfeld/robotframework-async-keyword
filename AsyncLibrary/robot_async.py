@@ -308,9 +308,15 @@ class AsyncLibrary:
                 POSTPONE.replay(f._postpone_id)
 
         if exceptions:
-            raise exceptions[-1]
-            # TODO: with Python 3.11 use ExceptionGroup
-            #       currently still stuck with Python 3.9
+            if len(exceptions) > 1:
+                try:
+                    raise ExceptionGroup(
+                        'async_get caught exceptions',
+                        exceptions)
+                except NameError:
+                    raise exceptions[-1]
+            else:
+                raise exceptions[-1]
 
         ret = [future[h].result() for h in handles]
 
