@@ -8,25 +8,6 @@ from robot.api import logger
 from robot.libraries.BuiltIn import BuiltIn
 from robot.libraries.DateTime import convert_time
 from robot.running import Keyword
-from robot.running.statusreporter import StatusReporter
-
-
-def PatchExit(func):
-    @wraps(func)
-    def inner(this, exc_type, exc_val, exc_tb):
-        if exc_type and issubclass(exc_type, RuntimeError):
-            tb = traceback.TracebackException(
-                exc_type, exc_val, exc_tb
-            )
-            for s in tb.format():
-                logger.console(s)
-
-        return func(this, exc_type, exc_val, exc_tb)
-
-    return inner
-
-
-StatusReporter.__exit__ = PatchExit(StatusReporter.__exit__)
 
 
 class Postpone:
@@ -204,7 +185,37 @@ class ScopedContext:
         self.activate()
         return self
 
+    @staticmethod
+    def _isexceptioninstance(exc, what):
+        if isinstance(exc, what):
+            return True
+        context = getattr(exc, '__context__', None)
+        if context:
+            return ScopedContext._isexceptioninstance(context, what)
+        return False
+
+    @staticmethod
+    def _trace_exception(exc):
+        if not exc:
+            return
+
+        if ScopedContext._isexceptioninstance(
+                exc, (SyntaxError, RuntimeError)):
+            tb = traceback.TracebackException.from_exception(
+                    exc
+            )
+            for s in tb.format():
+                logger.console(s)
+
+        get_errors = getattr(exc, 'get_errors', None)
+        if get_errors:
+            for error in get_errors():
+                if error is not exc:
+                    ScopedContext._trace_exception(error)
+
     def __exit__(self, exc_type, exc_val, exc_tb):
+        self._trace_exception(exc_val)
+
         self.kill()
 
 
