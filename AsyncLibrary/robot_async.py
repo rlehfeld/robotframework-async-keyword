@@ -187,6 +187,8 @@ class ScopedContext:
 
     @staticmethod
     def _isexceptioninstance(exc, what):
+        if not exc:
+            return False
         if isinstance(exc, what):
             return True
         context = getattr(exc, '__context__', None)
@@ -209,9 +211,13 @@ class ScopedContext:
 
         get_errors = getattr(exc, 'get_errors', None)
         if get_errors:
-            for error in get_errors():
-                if error is not exc:
-                    ScopedContext._trace_exception(error)
+            errors = get_errors()
+        else:
+            errors = getattr(exc, 'exceptions', ())
+
+        for error in errors:
+            if error is not exc:
+                ScopedContext._trace_exception(error)
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self._trace_exception(exc_val)
