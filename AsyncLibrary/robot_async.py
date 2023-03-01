@@ -4,6 +4,7 @@ import traceback
 from concurrent.futures import ThreadPoolExecutor, wait
 from functools import wraps
 from .scoped_value import ScopedValue, ScopedDescriptor
+from .protected_ordered_dict import ProtectedOrderedDict
 from robot.api import logger
 from robot.libraries.BuiltIn import BuiltIn
 from robot.libraries.DateTime import convert_time
@@ -156,7 +157,11 @@ class ScopedContext:
                     PatchedClass.__name__ = parent.__class__.__name__
                     PatchedClass.__doc__ = parent.__class__.__doc__
                     parent.__class__ = PatchedClass
-
+            if not isinstance(self._context.namespace._kw_store.libraries,
+                              ProtectedOrderedDict):
+                self._context.namespace._kw_store.libraries = ProtectedOrderedDict(
+                    self._context.namespace._kw_store.libraries
+                )
             self._forks.append(scope.fork())
 
     def activate(self):
