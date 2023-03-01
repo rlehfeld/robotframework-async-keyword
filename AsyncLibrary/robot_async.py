@@ -159,8 +159,10 @@ class ScopedContext:
                     parent.__class__ = PatchedClass
             if not isinstance(self._context.namespace._kw_store.libraries,
                               ProtectedOrderedDict):
-                self._context.namespace._kw_store.libraries = ProtectedOrderedDict(
-                    self._context.namespace._kw_store.libraries
+                self._context.namespace._kw_store.libraries = (
+                    ProtectedOrderedDict(
+                        self._context.namespace._kw_store.libraries
+                    )
                 )
             self._forks.append(scope.fork())
 
