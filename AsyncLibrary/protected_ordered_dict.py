@@ -7,7 +7,10 @@ def protect_callable(func):
     @wraps(func)
     def inner(self, *args, **kwargs):
         with self._lock:
-            return func(self, *args, **kwargs)
+            result = func(self, *args, **kwargs)
+            if isinstance(result, tuple):
+                result = list(result)
+            return result
     return inner
 
 
