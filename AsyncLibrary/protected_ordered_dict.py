@@ -1,4 +1,4 @@
-from collections import OrderedDict
+from collections import OrderedDict, MappingView
 from functools import wraps
 from threading import RLock
 
@@ -8,7 +8,7 @@ def protect_callable(func):
     def inner(self, *args, **kwargs):
         with self._lock:
             result = func(self, *args, **kwargs)
-            if isinstance(result, tuple):
+            if isinstance(result, (MappingView, tuple)):
                 result = list(result)
             return result
     return inner
