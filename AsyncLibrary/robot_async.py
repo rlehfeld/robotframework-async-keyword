@@ -3,12 +3,35 @@ import threading
 import traceback
 from concurrent.futures import ThreadPoolExecutor, wait
 from functools import wraps
-from .scoped_value import ScopedValue, ScopedDescriptor
+from .scoped_value import scope_parameter, undefined
 from .protected_ordered_dict import ProtectedOrderedDict
 from robot.api import logger
 from robot.libraries.BuiltIn import BuiltIn
 from robot.libraries.DateTime import convert_time
 from robot.running import Keyword
+from robot.output.logger import LOGGER
+
+
+scope_parameter(
+    LOGGER,
+    '_started_keywords',
+)
+
+try:
+    scope_parameter(
+        LOGGER._console_logger.logger,
+        '_started_keywords',
+        forkvalue=0,
+    )
+except AttributeError:
+    pass
+
+if LOGGER._console_logger:
+    scope_parameter(
+        LOGGER._console_logger.logger,
+        '_started_keywords',
+        forkvalue=0,
+    )
 
 
 class Postpone:
@@ -18,14 +41,14 @@ class Postpone:
         self._id = threading.local()
         self._next = 0
 
-        context = BuiltIn()._get_context()
-        output = getattr(context, 'output', None)
+        self._context = BuiltIn()._get_context()
+        output = getattr(self._context, 'output', None)
         xmllogger = getattr(output, '_xmllogger', None)
         writer = getattr(xmllogger, '_writer', None)
         if writer:
-            writer.start = self.decorator(writer.start)
-            writer.end = self.decorator(writer.end)
-            writer.element = self.decorator(writer.element)
+            writer.start = self.postpone(writer.start)
+            writer.end = self.postpone(writer.end)
+            writer.element = self.postpone(writer.element)
 
     def fork(self):
         with self._lock:
@@ -47,19 +70,19 @@ class Postpone:
         except AttributeError:
             return None
 
-    def decorator(self, func):
+    def postpone(self, func):
         @wraps(func)
         def inner(*args, **kwargs):
             postpone_id = self.get()
             if postpone_id is None:
                 return func(*args, **kwargs)
-
             else:
                 with self._lock:
                     self._postponed[postpone_id].append([
                         func, list(args), dict(kwargs)
                     ])
 
+        inner._original = func
         return inner
 
     def replay(self, postpone_id):
@@ -68,8 +91,19 @@ class Postpone:
                 try:
                     func = self._postponed[postpone_id].pop(0)
                 except IndexError:
+                    del self._postponed[postpone_id]
                     break
+
             func[0](*func[1], **func[2])
+
+    def close(self):
+        output = getattr(self._context, 'output', None)
+        xmllogger = getattr(output, '_xmllogger', None)
+        writer = getattr(xmllogger, '_writer', None)
+        if writer:
+            writer.start = writer.start._original
+            writer.end = writer.end._original
+            writer.element = writer.element._original
 
     def __call__(self, postpone_id):
         self.activate(postpone_id)
@@ -80,9 +114,6 @@ class Postpone:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.deactivate()
-
-
-POSTPONE = Postpone()
 
 
 class BlockSignals:
@@ -110,6 +141,7 @@ class BlockSignals:
 
 class ScopedContext:
     _attributes = [
+        ['test'],
         ['user_keywords'],
         ['step_types'],
         ['timeout_occurred'],
@@ -122,6 +154,7 @@ class ScopedContext:
     ]
 
     _construct = {
+        'test': None,
         '_started_keywords': 0,
         'timeout_occurred': False,
         'in_suite_teardown': False,
@@ -137,26 +170,8 @@ class ScopedContext:
             for p in a:
                 parent = current
                 current = getattr(parent, p)
-            try:
-                scope = getattr(parent, f'_scoped_{p}')
-            except AttributeError:
-                scope = None
-            finally:
-                if not isinstance(scope, ScopedValue):
-                    kwargs = {'default': current}
-                    if p in self._construct:
-                        kwargs['forkvalue'] = self._construct[p]
-                    scope = ScopedValue(**kwargs)
-                    setattr(parent, f'_scoped_{p}', scope)
-                    delattr(parent, p)
-
-                    class PatchedClass(parent.__class__):
-                        pass
-
-                    setattr(PatchedClass, p, ScopedDescriptor(f'_scoped_{p}'))
-                    PatchedClass.__name__ = parent.__class__.__name__
-                    PatchedClass.__doc__ = parent.__class__.__doc__
-                    parent.__class__ = PatchedClass
+            forkvalue = self._construct.get(p, undefined)
+            scope = scope_parameter(parent, p, forkvalue=forkvalue)
             if not isinstance(self._context.namespace._kw_store.libraries,
                               ProtectedOrderedDict):
                 self._context.namespace._kw_store.libraries = (
@@ -209,7 +224,7 @@ class ScopedContext:
             return
 
         if ScopedContext._isexceptioninstance(
-                exc, (SyntaxError, RuntimeError)):
+                exc, (SyntaxError, RuntimeError, AttributeError)):
             tb = traceback.TracebackException.from_exception(
                     exc
             )
@@ -243,9 +258,10 @@ class AsyncLibrary:
         with BlockSignals():
             self._executor = ThreadPoolExecutor()
         self._lock = threading.Lock()
+        self._postpone = Postpone()
 
     def _run(self, scope, postpone_id, fn, *args, **kwargs):
-        with POSTPONE(postpone_id), scope:
+        with self._postpone(postpone_id), scope:
             return fn(*args, **kwargs)
 
     def async_run(self, keyword, *args):
@@ -256,7 +272,7 @@ class AsyncLibrary:
         context = BuiltIn()._get_context()
         runner = context.get_runner(keyword)
         scope = ScopedContext()
-        postpone_id = POSTPONE.fork()
+        postpone_id = self._postpone.fork()
 
         with BlockSignals():
             future = self._executor.submit(
@@ -284,6 +300,7 @@ class AsyncLibrary:
         with self._lock:
             if handle is None:
                 handles = list(self._future.keys())
+                handles.sort()
             else:
                 try:
                     handles = list(handle)
@@ -318,7 +335,7 @@ class AsyncLibrary:
         for h in handles:
             f = future[h]
             if f in result.done:
-                POSTPONE.replay(f._postpone_id)
+                self._postpone.replay(f._postpone_id)
 
         if exceptions:
             if len(exceptions) > 1:
@@ -349,18 +366,23 @@ class AsyncLibrary:
     def _close(self):
         self._wait_all()
         self._executor.shutdown()
+        self._postpone.close()
 
     def _wait_all(self):
-        futures = []
+        futures = {}
+        handles = []
         with self._lock:
-            for f in self._future.values():
+            for h, f in self._future.items():
                 if f.cancel():
                     f._scope.kill()
                 else:
-                    futures.append(f)
+                    handles.append(h)
+                    futures[h] = f
             self._future.clear()
 
-        wait(futures)
+        wait(futures.values())
 
-        for f in futures:
-            POSTPONE.replay(f._postpone_id)
+        handles.sort()
+        for h in handles:
+            f = futures[h]
+            self._postpone.replay(f._postpone_id)

@@ -1,29 +1,26 @@
 import threading
 
 
+undefined = ()
+
+
 class ScopedValue:
-    def __init__(self, **kwargs):
+    def __init__(self, original=undefined, *, forkvalue=undefined):
         self._scopeid = threading.local()
-        try:
-            default = kwargs.pop('default')
-        except KeyError:
+        if original is undefined:
             self._scopes = {}
         else:
-            self._scopes = {None: default}
+            self._scopes = {None: original}
             try:
-                self.__name__ = default.__name__
+                self.__name__ = original.__name__
             except AttributeError:
                 pass
             try:
-                self.__doc__ = default.__doc__
+                self.__doc__ = original.__doc__
             except AttributeError:
                 pass
-        try:
-            self._forkvalue = kwargs.pop('forkvalue')
-        except KeyError:
-            pass
-        if kwargs:
-            raise TypeError('got unexpected keyword argument(s)')
+        if forkvalue is not undefined:
+            self._forkvalue = forkvalue
         self._lock = threading.Lock()
         self._next = 0
 
@@ -101,3 +98,31 @@ class ScopedDescriptor:
             scope = ScopedValue()
             setattr(instance, self._attribute, scope)
             return scope
+
+
+def scope_parameter(obj, parameter, *, forkvalue=undefined):
+    try:
+        scope = getattr(obj, f'_scoped_{parameter}')
+    except AttributeError:
+        scope = None
+
+    if not isinstance(scope, ScopedValue):
+        original = getattr(obj, parameter)
+
+        kwargs = {'original': original}
+        if forkvalue is not undefined:
+            kwargs['forkvalue'] = forkvalue
+        scope = ScopedValue(**kwargs)
+        setattr(obj, f'_scoped_{parameter}', scope)
+        delattr(obj, parameter)
+
+        class PatchedClass(obj.__class__):
+            pass
+
+        setattr(PatchedClass, parameter,
+                ScopedDescriptor(f'_scoped_{parameter}'))
+        PatchedClass.__name__ = obj.__class__.__name__
+        PatchedClass.__doc__ = obj.__class__.__doc__
+        obj.__class__ = PatchedClass
+
+    return scope
