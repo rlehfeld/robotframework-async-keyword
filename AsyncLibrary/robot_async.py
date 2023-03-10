@@ -15,23 +15,18 @@ from robot.output.logger import LOGGER
 scope_parameter(
     LOGGER,
     '_started_keywords',
+    forkvalue=0,
 )
 
-try:
-    scope_parameter(
-        LOGGER._console_logger.logger,
-        '_started_keywords',
-        forkvalue=0,
-    )
-except AttributeError:
-    pass
-
 if LOGGER._console_logger:
-    scope_parameter(
-        LOGGER._console_logger.logger,
-        '_started_keywords',
-        forkvalue=0,
-    )
+    try:
+        scope_parameter(
+            LOGGER._console_logger.logger,
+            '_started_keywords',
+            forkvalue=0,
+        )
+    except AttributeError:
+        pass
 
 
 class Postpone:
