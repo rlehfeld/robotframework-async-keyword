@@ -12,23 +12,6 @@ from robot.running import Keyword
 from robot.output.logger import LOGGER
 
 
-scope_parameter(
-    LOGGER,
-    '_started_keywords',
-    forkvalue=0,
-)
-
-if LOGGER._console_logger:
-    try:
-        scope_parameter(
-            LOGGER._console_logger.logger,
-            '_started_keywords',
-            forkvalue=0,
-        )
-    except AttributeError:
-        pass
-
-
 class Postpone:
     def __init__(self):
         self._lock = threading.Lock()
@@ -134,6 +117,23 @@ class BlockSignals:
             self._sigmask(signal.SIG_SETMASK, self._current)
 
 
+logger_scope = scope_parameter(
+    LOGGER,
+    '_started_keywords',
+    forkvalue=0,
+)
+
+if LOGGER._console_logger:
+    try:
+        console_logger_scope = scope_parameter(
+            LOGGER._console_logger.logger,
+            '_started_keywords',
+            forkvalue=0,
+        )
+    except AttributeError:
+        console_logger_scope = None
+
+
 class ScopedContext:
     _attributes = [
         ['test'],
@@ -176,6 +176,10 @@ class ScopedContext:
                 )
             self._forks.append(scope.fork())
 
+        self._logger = logger_scope.fork()
+        if console_logger_scope:
+            self._console_logger = console_logger_scope.fork()
+
     def activate(self):
         forks = self._forks
 
@@ -185,6 +189,12 @@ class ScopedContext:
                 current = getattr(current, p)
             scope = getattr(current, f'_scoped_{a[-1]}')
             scope.activate(c)
+
+        logger_scope.activate(self._logger)
+        if console_logger_scope:
+            console_logger_scope.activate(
+                self._console_logger
+            )
 
     def kill(self):
         forks = self._forks
@@ -197,6 +207,12 @@ class ScopedContext:
                 scope = getattr(current, f'_scoped_{a[-1]}')
                 scope.kill(c)
             self._forks.append(None)
+
+        logger_scope.kill(self._logger)
+        if console_logger_scope:
+            console_logger_scope.kill(
+                self._console_logger
+            )
 
     def __enter__(self):
         self.activate()

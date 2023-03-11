@@ -1,7 +1,7 @@
 import threading
 
 
-undefined = ()
+undefined = []
 
 
 class ScopedValue:
