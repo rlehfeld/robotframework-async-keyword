@@ -359,7 +359,7 @@ class AsyncLibrary:
                         'async_get caught exceptions',
                         exceptions)
                 except NameError:
-                    raise exceptions[-1]
+                    raise exceptions[-1]    # pylint: disable=raise-missing-from
             else:
                 raise exceptions[-1]
 
@@ -377,7 +377,7 @@ class AsyncLibrary:
 
     def _end_suite(
             self,
-            suite,
+            suite,    # pylint: disable=unused-argument
             attrs,    # pylint: disable=unused-argument
     ):
         '''
