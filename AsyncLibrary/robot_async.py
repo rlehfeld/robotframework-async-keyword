@@ -267,7 +267,7 @@ class AsyncLibrary:
     ROBOT_LISTENER_API_VERSION = 2
 
     def __init__(self):
-        self.ROBOT_LIBRARY_LISTENER = [self]
+        self.ROBOT_LIBRARY_LISTENER = [self]    # pylint: disable=invalid-name
         self._future = {}
         self._last_thread_handle = 0
         with BlockSignals():
