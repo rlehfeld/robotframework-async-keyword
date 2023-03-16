@@ -13,7 +13,7 @@ Install the library from GitHub using pip:
 
     pip install git+https://github.com/driesguillaume/robotframework-async.git
 
-Or add to your `conda.yaml` file:
+Or add to your ``conda.yaml`` file:
 
 ::
 
