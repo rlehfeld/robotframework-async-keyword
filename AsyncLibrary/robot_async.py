@@ -375,15 +375,30 @@ class AsyncLibrary:
         '''
         return self.async_get(timeout=timeout)
 
-    def _end_suite(self, suite, attrs):
+    def _end_suite(
+            self,
+            suite,
+            attrs,    # pylint: disable=unused-argument
+    ):
+        '''
+        End Suite callback. Wait for all asynchronous started keywords to terminate
+        '''
         self._wait_all()
 
     def _close(self):
+        '''
+        Cleanup Method which is called by robot framework when the object is about to
+        be removed
+        '''
         self._wait_all()
         self._executor.shutdown()
         self._postpone.close()
 
     def _wait_all(self):
+        '''
+        wait and cancel not yet triggered asynchronous keyword executions
+        and post the output which was generated during the execution
+        '''
         futures = {}
         handles = []
         with self._lock:
