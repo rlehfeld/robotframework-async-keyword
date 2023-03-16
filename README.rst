@@ -26,18 +26,18 @@ Usage
 
 #) Import into a test suite with:
 
-.. code:: robotframework
+   .. code:: robotframework
 
-    Library AsyncLibrary
+      Library AsyncLibrary
 
 #) To run a keyword asynchronously:
 
-.. code:: robotframework
+   .. code:: robotframework
 
-    ${handle}    Async Run    some keyword    first argument    second argument
+      ${handle}    Async Run    some keyword    first argument    second argument
 
 #) To retrieve the return value, a blocking call to async_get is called with the handle:
 
-.. code:: robotframework
+   .. code:: robotframework
 
-    ${return_value}    Async Get    ${handle}
+      ${return_value}    Async Get    ${handle}
