@@ -17,8 +17,8 @@ Or add to your `conda.yaml` file:
 
 ::
 
-    \- pip:
-        \- git+https://github.com/driesguillaume/robotframework-async.git
+    - pip:
+        - git+https://github.com/driesguillaume/robotframework-async.git
 
 
 Usage
