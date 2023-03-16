@@ -3,13 +3,13 @@ import threading
 import traceback
 from concurrent.futures import ThreadPoolExecutor, wait
 from functools import wraps
-from .scoped_value import scope_parameter, undefined
-from .protected_ordered_dict import ProtectedOrderedDict
 from robot.api import logger
 from robot.libraries.BuiltIn import BuiltIn
 from robot.libraries.DateTime import convert_time
 from robot.running import Keyword
 from robot.output.logger import LOGGER
+from .scoped_value import scope_parameter, undefined
+from .protected_ordered_dict import ProtectedOrderedDict
 
 
 class Postpone:
@@ -54,11 +54,12 @@ class Postpone:
             postpone_id = self.get()
             if postpone_id is None:
                 return func(*args, **kwargs)
-            else:
-                with self._lock:
-                    self._postponed[postpone_id].append([
-                        func, list(args), dict(kwargs)
-                    ])
+
+            with self._lock:
+                self._postponed[postpone_id].append([
+                    func, list(args), dict(kwargs)
+                ])
+                return None
 
         inner._original = func
         return inner
@@ -96,6 +97,7 @@ class Postpone:
 
 class BlockSignals:
     def __init__(self):
+        self._current = []
         try:
             self._sigmask = getattr(signal, 'pthread_sigmask')
         except AttributeError:
@@ -103,18 +105,20 @@ class BlockSignals:
 
     def __enter__(self):
         if self._sigmask:
-            self._current = self._sigmask(
-                signal.SIG_BLOCK,
-                [
-                    signal.SIGTERM,
-                    signal.SIGINT,
-                ]
+            self._current.append(
+                self._sigmask(
+                    signal.SIG_BLOCK,
+                    [
+                        signal.SIGTERM,
+                        signal.SIGINT,
+                    ]
+                )
             )
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         if self._sigmask:
-            self._sigmask(signal.SIG_SETMASK, self._current)
+            self._sigmask(signal.SIG_SETMASK, self._current.pop())
 
 
 logger_scope = scope_parameter(

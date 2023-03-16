@@ -17,7 +17,7 @@ def protect_callable(func):
 class ProtectedOrderedDict(OrderedDict):
     def __init__(self, other=(), /, **kwds):
         self._lock = RLock()
-        return super().__init__(other, **kwds)
+        super().__init__(other, **kwds)
     __init__.__doc__ = OrderedDict.__init__.__doc__
 
 
