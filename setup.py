@@ -10,7 +10,7 @@ setup(
     url = "https://github.com/rlehfeld/robotframework-async",
     download_url = "https://github.com/rlehfeld/robotframework-async",
     keywords = ["async", "robotframework"],
-    install_requires = ["robotframework >= 6.0.2"],
+    install_requires = ["robotframework >= 5.0.1"],
     packages = ["AsyncLibrary"],
     classifiers = [
         "Programming Language :: Python",

@@ -3,7 +3,13 @@ Generic Robot Framework library for asynchronous keyword execution
 Installation
 ============
 If you have pip and git installed:
-``pip install git+https://github.com/rlehfeld/robotframework-async.git``
+
+    pip install git+https://github.com/driesguillaume/robotframework-async.git
+
+Or add to your conda.yaml file:
+
+    \- pip:
+        \- git+https://github.com/driesguillaume/robotframework-async.git
 
 Usage
 =====
