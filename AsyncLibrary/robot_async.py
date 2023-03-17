@@ -164,13 +164,13 @@ class ScopedContext:
     def __init__(self):
         self._context = BuiltIn()._get_context()
         self._forks = []
-        for a in self._attributes:
+        for attibute in self._attributes:
             current = self._context
-            for p in a:
+            for parameter in attibute:
                 parent = current
-                current = getattr(parent, p)
-            forkvalue = self._construct.get(p, undefined)
-            scope = scope_parameter(parent, p, forkvalue=forkvalue)
+                current = getattr(parent, parameter)
+            forkvalue = self._construct.get(parameter, undefined)
+            scope = scope_parameter(parent, parameter, forkvalue=forkvalue)
             if not isinstance(self._context.namespace._kw_store.libraries,
                               ProtectedOrderedDict):
                 self._context.namespace._kw_store.libraries = (
@@ -187,12 +187,12 @@ class ScopedContext:
     def activate(self):
         forks = self._forks
 
-        for a, c in zip(self._attributes, forks):
+        for attibute, context in zip(self._attributes, forks):
             current = self._context
-            for p in a[0:-1]:
-                current = getattr(current, p)
-            scope = getattr(current, f'_scoped_{a[-1]}')
-            scope.activate(c)
+            for parameter in attibute[0:-1]:
+                current = getattr(current, parameter)
+            scope = getattr(current, f'_scoped_{attibute[-1]}')
+            scope.activate(context)
 
         logger_scope.activate(self._logger)
         if CONSOLE_LOGGER_SCOPE:
@@ -203,13 +203,13 @@ class ScopedContext:
     def kill(self):
         forks = self._forks
         self._forks = []
-        for a, c in zip(self._attributes, forks):
-            if c is not None:
+        for attibute, context in zip(self._attributes, forks):
+            if context is not None:
                 current = self._context
-                for p in a[0:-1]:
-                    current = getattr(current, p)
-                scope = getattr(current, f'_scoped_{a[-1]}')
-                scope.kill(c)
+                for parameter in attibute[0:-1]:
+                    current = getattr(current, parameter)
+                scope = getattr(current, f'_scoped_{attibute[-1]}')
+                scope.kill(context)
             self._forks.append(None)
 
         logger_scope.kill(self._logger)
@@ -240,11 +240,11 @@ class ScopedContext:
 
         if ScopedContext._isexceptioninstance(
                 exc, (SyntaxError, RuntimeError, AttributeError)):
-            tb = traceback.TracebackException.from_exception(
+            trace = traceback.TracebackException.from_exception(
                     exc
             )
-            for s in tb.format():
-                logger.console(s)
+            for line in trace.format():
+                logger.console(line)
 
         get_errors = getattr(exc, 'get_errors', None)
         if get_errors:
@@ -268,16 +268,16 @@ class AsyncLibrary:
 
     def __init__(self):
         self.ROBOT_LIBRARY_LISTENER = [self]    # pylint: disable=invalid-name
-        self._future = {}
+        self._futures = {}
         self._last_thread_handle = 0
         with BlockSignals():
             self._executor = ThreadPoolExecutor()
         self._lock = threading.Lock()
         self._postpone = Postpone()
 
-    def _run(self, scope, postpone_id, fn, *args, **kwargs):
+    def _run(self, scope, postpone_id, func, *args, **kwargs):
         with self._postpone(postpone_id), scope:
-            return fn(*args, **kwargs)
+            return func(*args, **kwargs)
 
     def async_run(self, keyword, *args):
         '''
@@ -299,7 +299,7 @@ class AsyncLibrary:
         with self._lock:
             handle = self._last_thread_handle
             self._last_thread_handle += 1
-            self._future[handle] = future
+            self._futures[handle] = future
 
         return handle
 
@@ -310,11 +310,11 @@ class AsyncLibrary:
         if timeout:
             timeout = convert_time(timeout, result_format='number')
 
-        future = {}
+        futures = {}
         retlist = True
         with self._lock:
             if handle is None:
-                handles = list(self._future.keys())
+                handles = list(self._futures.keys())
                 handles.sort()
             else:
                 try:
@@ -322,36 +322,36 @@ class AsyncLibrary:
                 except TypeError:
                     handles = [handle]
                     retlist = False
-            for h in handles:
-                future[h] = self._future[h]
-            for h in handles:
+            for item in handles:
+                futures[item] = self._futures[item]
+            for item in handles:
                 # in two steps so that no future get lost
                 # in case of an error
-                self._future.pop(h)
+                self._futures.pop(item)
 
-        result = wait(future.values(), timeout)
+        result = wait(futures.values(), timeout)
 
         exceptions = [e for e in (
-            future[h].exception() for h in handles
-            if future[h] in result.done
+            futures[h].exception() for h in handles
+            if futures[h] in result.done
         ) if e]
 
         if result.not_done:
             with self._lock:
-                self._future.update({k: v for k, v in future.items()
+                self._futures.update({k: v for k, v in futures.items()
                                      if v in result.not_done})
             exceptions.append(
                 TimeoutError(
-                    f'{len(result.not_done)} (of {len(future)}) '
+                    f'{len(result.not_done)} (of {len(futures)}) '
                     'futures unfinished'
                 )
             )
 
-        for h in handles:
-            f = future[h]
-            if f in result.done:
+        for item in handles:
+            future = futures[item]
+            if future in result.done:
                 self._postpone.replay(
-                    f._postpone_id    # pylint: disable=protected-access
+                    future._postpone_id    # pylint: disable=protected-access
                 )
 
         if exceptions:
@@ -365,7 +365,7 @@ class AsyncLibrary:
             else:
                 raise exceptions[-1]
 
-        ret = [future[h].result() for h in handles]
+        ret = [futures[h].result() for h in handles]
 
         if retlist:
             return ret
@@ -405,19 +405,19 @@ class AsyncLibrary:
         futures = {}
         handles = []
         with self._lock:
-            for h, f in self._future.items():
-                if f.cancel():
-                    f._scope.kill()    # pylint: disable=protected-access
+            for handle, future in self._futures.items():
+                if future.cancel():
+                    future._scope.kill()    # pylint: disable=protected-access
                 else:
-                    handles.append(h)
-                    futures[h] = f
-            self._future.clear()
+                    handles.append(handle)
+                    futures[handle] = future
+            self._futures.clear()
 
         wait(futures.values())
 
         handles.sort()
-        for h in handles:
-            f = futures[h]
+        for handle in handles:
+            future = futures[handle]
             self._postpone.replay(
-                f._postpone_id    # pylint: disable=protected-access
+                future._postpone_id    # pylint: disable=protected-access
             )
