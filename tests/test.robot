@@ -30,13 +30,14 @@ Example
 Nested Keyword
     [Arguments]    ${value}
     Log To Console    Got Value ${value}
-    [Return]    ${value}
+    ${return}    Set Variable    ${value}
+    RETURN    ${return}
 
 Deeply Nested Keyword
     [Arguments]    ${value}
     Log To Console    Deeply Nested Keyword ${value}
-    Nested Keyword    ${value}
-    [Return]    ${value}
+    ${return}    Nested Keyword    ${value}
+    RETURN    ${return}
 
 Deeply Nested Fail
     Fail    should fail
