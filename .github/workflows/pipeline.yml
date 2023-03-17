@@ -25,18 +25,18 @@ jobs:
     steps:
       - name: Analysing the code with flake8
         run: |
-	  flake8 $(git ls-files '*.py')
+          flake8 $(git ls-files '*.py')
 
   pylint:
     needs: setup
     steps:
       - name: Analysing the code with pylint
         run: |
-	  pylint $(git ls-files '*.py')
+          pylint $(git ls-files '*.py')
 
   robot-framework:
     needs: setup
     steps:
       - name: Executing Robot Framework Tests
         run: |
-	  robot tests/
+          robot tests/
