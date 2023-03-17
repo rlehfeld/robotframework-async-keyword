@@ -1,3 +1,7 @@
+'''
+Wrapper around object to make values of parameters actually
+thread specific
+'''
 import threading
 
 
@@ -5,6 +9,12 @@ undefined = []
 
 
 class ScopedValue:
+    '''
+    scope content holder for the different execution
+    path that will exists in robot framework, once
+    we execute a keyword in a different thread
+    '''
+
     def __init__(
             self,
             original=undefined,
@@ -31,9 +41,16 @@ class ScopedValue:
 
     @property
     def scope(self):
+        '''
+        return the current active scope for a thread
+        '''
         return getattr(self._scopeid, 'value', None)
 
     def fork(self):
+        '''
+        create a new scope which can be activated in a thread
+        through the use of the activate method
+        '''
         with self._lock:
             identifier = self._next
             try:
@@ -50,6 +67,10 @@ class ScopedValue:
             return identifier
 
     def kill(self, identifier=-1):
+        '''
+        destroy a scope of. This method does not check, if the
+        scope is currently in use by a thread
+        '''
         if identifier is None:
             raise RuntimeError('default scope cannot be killed')
         if identifier < 0:
@@ -64,6 +85,9 @@ class ScopedValue:
             pass
 
     def activate(self, identifier):
+        '''
+        activates a scope for a thread
+        '''
         with self._lock:
             if identifier is None:
                 try:
@@ -76,15 +100,28 @@ class ScopedValue:
                 raise RuntimeError(f'a fork with {identifier=} does not exist')
 
     def get(self):
+        '''
+        return the current active scope object
+        '''
         with self._lock:
             return self._scopes[self.scope]
 
     def set(self, value):
+        '''
+        set the current active scope object
+        '''
         with self._lock:
             self._scopes[self.scope] = value
 
 
 class ScopedDescriptor:
+    '''
+    Descriptor access class
+    in order to implement transparently,
+    without explicitly changing the robot framework code,
+    that in different threads the value of a parameter of an object
+    needs to have actually thread specifis values
+    '''
     def __init__(self, attribute):
         self._attribute = attribute
 
@@ -97,6 +134,9 @@ class ScopedDescriptor:
         return self.instance(instance).set(value)
 
     def instance(self, instance):
+        '''
+        return the scoped instance of an object
+        '''
         try:
             return getattr(instance, self._attribute)
         except AttributeError:
@@ -111,6 +151,12 @@ def scope_parameter(
         *,
         forkvalue=undefined,
 ):    # pylint: disable=dangerous-default-value
+    '''
+    decorator an paramter in an object through monkey patching
+    so it can have different values in different threads
+    as the code in Robot Framework is not prepared for having
+    different execution paths
+    '''
     try:
         scope = getattr(obj, f'_scoped_{parameter}')
     except AttributeError:

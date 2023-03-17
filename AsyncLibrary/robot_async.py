@@ -1,3 +1,11 @@
+'''
+Actual implementation of the Robot Framework extension
+It uses quite extensivle monkey patching as Robot Framework is not
+prepared for multi threaded execution of keywords
+
+Just saying this, it is not guaranteed that it will work under all
+circumstances or for older or newer version that we are using it for
+'''
 import signal
 import threading
 import traceback
@@ -13,6 +21,13 @@ from .protected_ordered_dict import ProtectedOrderedDict
 
 
 class Postpone:
+    '''
+    wrapper which is used when tracing into the xml journal
+    in oder to prevent that the file will corrupted.
+
+    The tracing is delayed(postponed) until the moment, that the keyword
+    is waited upon in the main thread
+    '''
     def __init__(self):
         self._lock = threading.Lock()
         self._postponed = {}
@@ -29,26 +44,49 @@ class Postpone:
             writer.element = self.postpone(writer.element)
 
     def fork(self):
+        '''
+        Create a new id for capturing traces which belong together.
+        The new Id is not activated in any thread though.
+        '''
         with self._lock:
             postpone_id = self._next
             self._next += 1
         return postpone_id
 
     def activate(self, postpone_id):
+        '''
+        Activate new capture id for the current thread.
+        '''
         with self._lock:
             self._postponed[postpone_id] = []
         self._id.value = postpone_id
 
     def deactivate(self):
-        del self._id.value
+        '''
+        Deactivate the capture id.
+        '''
+        try:
+            del self._id.value
+        except AttributeError:
+            pass
 
     def get(self):
+        '''
+        return the current active thread id.
+        '''
         try:
             return getattr(self._id, 'value')
         except AttributeError:
             return None
 
     def postpone(self, func):
+        '''
+        decorator around the original function.
+        In case, an postpone Id is activated for the thread,
+        just collect the execution with it's parameters
+        so it can be done once it is save to do so
+        (once we are in main thread)
+        '''
         @wraps(func)
         def inner(*args, **kwargs):
             postpone_id = self.get()
@@ -65,6 +103,10 @@ class Postpone:
         return inner
 
     def replay(self, postpone_id):
+        '''
+        replay all captured commands as it should be save to execute
+        them now
+        '''
         while True:
             with self._lock:
                 try:
@@ -76,6 +118,9 @@ class Postpone:
             func[0](*func[1], **func[2])
 
     def close(self):
+        '''
+        undo the monkey patching as the object will get destroyed now
+        '''
         output = getattr(self._context, 'output', None)
         xmllogger = getattr(output, '_xmllogger', None)
         writer = getattr(xmllogger, '_writer', None)
@@ -96,6 +141,10 @@ class Postpone:
 
 
 class BlockSignals:
+    '''
+    simple scope guard to automatically block
+    and unblock signals
+    '''
     def __init__(self):
         self._current = []
         try:
@@ -139,6 +188,15 @@ if LOGGER._console_logger:    # pylint: disable=protected-access
 
 
 class ScopedContext:
+    '''
+    collection of things in RobotFramework which
+    needs to have different values for threads
+    executing Robot Framework keywords ouside of the
+    main thread
+    This class creates a scope objectes for all of these objects,
+    and provides methods which help to create an actual execution
+    scope for threads and activation and deactivation methodes
+    '''
     _attributes = [
         ['test'],
         ['user_keywords'],
@@ -185,6 +243,9 @@ class ScopedContext:
             self._console_logger = CONSOLE_LOGGER_SCOPE.fork()
 
     def activate(self):
+        '''
+        activate all scopes for the handled object for current thread
+        '''
         forks = self._forks
 
         for attibute, context in zip(self._attributes, forks):
@@ -201,6 +262,9 @@ class ScopedContext:
             )
 
     def kill(self):
+        '''
+        kill the scopes of all handled objects
+        '''
         forks = self._forks
         self._forks = []
         for attibute, context in zip(self._attributes, forks):
@@ -263,6 +327,10 @@ class ScopedContext:
 
 
 class AsyncLibrary:
+    '''
+    actual implementation class for the AsyncLibrary
+    Robot Framework extension
+    '''
     ROBOT_LIBRARY_SCOPE = 'SUITE'
     ROBOT_LISTENER_API_VERSION = 2
 
