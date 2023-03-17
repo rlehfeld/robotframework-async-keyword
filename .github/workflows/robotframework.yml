@@ -1,4 +1,4 @@
-name: Pylint
+name: Robot Framework
 
 on: [push]
 
@@ -17,8 +17,8 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install pylint robotframework
+        pip install flake8 flake8-polyfill robotframework
 	pip install -e .
-    - name: Analysing the code with pylint
+    - name: Analysing the code with flake8
       run: |
-        pylint $(git ls-files '*.py')
+        robot tests/
