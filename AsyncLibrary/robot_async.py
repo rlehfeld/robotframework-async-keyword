@@ -323,6 +323,8 @@ class AsyncLibrary:
                     handles = [handle]
                     retlist = False
             for item in handles:
+                if item in futures:
+                    raise RuntimeError(f'handle={item} passed more than once')
                 futures[item] = self._futures[item]
             for item in handles:
                 # in two steps so that no future get lost
