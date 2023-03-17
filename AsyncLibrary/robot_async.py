@@ -371,13 +371,7 @@ class AsyncLibrary:
 
         return handle
 
-    def async_get(self, handle=None, timeout=None):
-        '''
-        Blocks until the keyword(s) spawned by _*Async Run*_ include a result.
-        '''
-        if timeout:
-            timeout = convert_time(timeout, result_format='number')
-
+    def _parse_handle(self, handle):
         futures = {}
         retlist = True
         with self._lock:
@@ -398,6 +392,17 @@ class AsyncLibrary:
                 # in two steps so that no future get lost
                 # in case of an error
                 self._futures.pop(item)
+
+            return retlist, handles, futures
+
+    def async_get(self, handle=None, timeout=None):
+        '''
+        Blocks until the keyword(s) spawned by _*Async Run*_ include a result.
+        '''
+        if timeout:
+            timeout = convert_time(timeout, result_format='number')
+
+        retlist, handles, futures = self._parse_handle(handle)
 
         result = wait(futures.values(), timeout)
 
