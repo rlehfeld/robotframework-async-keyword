@@ -22,6 +22,7 @@ jobs:
 
   flake8:
     needs: setup
+    runs-on: ubuntu-latest
     steps:
       - name: Analysing the code with flake8
         run: |
@@ -29,6 +30,7 @@ jobs:
 
   pylint:
     needs: setup
+    runs-on: ubuntu-latest
     steps:
       - name: Analysing the code with pylint
         run: |
@@ -36,6 +38,7 @@ jobs:
 
   robot-framework:
     needs: setup
+    runs-on: ubuntu-latest
     steps:
       - name: Executing Robot Framework Tests
         run: |
