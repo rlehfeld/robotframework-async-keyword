@@ -6,7 +6,7 @@ Short Description
 Generic Robot Framework library for asynchronous keyword execution
 
 Installation
-============
+------------
 Install the library from GitHub using pip:
 
 ::
