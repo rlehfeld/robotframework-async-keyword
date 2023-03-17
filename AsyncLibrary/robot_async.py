@@ -61,7 +61,7 @@ class Postpone:
                 ])
                 return None
 
-        inner._original = func
+        inner._original = func    # pylint: disable=protected-access
         return inner
 
     def replay(self, postpone_id):
@@ -80,9 +80,9 @@ class Postpone:
         xmllogger = getattr(output, '_xmllogger', None)
         writer = getattr(xmllogger, '_writer', None)
         if writer:
-            writer.start = writer.start._original
-            writer.end = writer.end._original
-            writer.element = writer.element._original
+            writer.start = writer.start._original    # noqa, E501 pylint: disable=protected-access
+            writer.end = writer.end._original    # noqa, E501  pylint: disable=protected-access
+            writer.element = writer.element._original    # noqa, E501  pylint: disable=protected-access
 
     def __call__(self, postpone_id):
         self.activate(postpone_id)
@@ -127,15 +127,15 @@ logger_scope = scope_parameter(
     forkvalue=0,
 )
 
-if LOGGER._console_logger:
+if LOGGER._console_logger:    # pylint: disable=protected-access
     try:
-        console_logger_scope = scope_parameter(
-            LOGGER._console_logger.logger,
+        CONSOLE_LOGGER_SCOPE = scope_parameter(
+            LOGGER._console_logger.logger,    # noqa, E501  pylint: disable=protected-access
             '_started_keywords',
             forkvalue=0,
         )
     except AttributeError:
-        console_logger_scope = None
+        CONSOLE_LOGGER_SCOPE = None
 
 
 class ScopedContext:
@@ -181,8 +181,8 @@ class ScopedContext:
             self._forks.append(scope.fork())
 
         self._logger = logger_scope.fork()
-        if console_logger_scope:
-            self._console_logger = console_logger_scope.fork()
+        if CONSOLE_LOGGER_SCOPE:
+            self._console_logger = CONSOLE_LOGGER_SCOPE.fork()
 
     def activate(self):
         forks = self._forks
@@ -195,8 +195,8 @@ class ScopedContext:
             scope.activate(c)
 
         logger_scope.activate(self._logger)
-        if console_logger_scope:
-            console_logger_scope.activate(
+        if CONSOLE_LOGGER_SCOPE:
+            CONSOLE_LOGGER_SCOPE.activate(
                 self._console_logger
             )
 
@@ -213,8 +213,8 @@ class ScopedContext:
             self._forks.append(None)
 
         logger_scope.kill(self._logger)
-        if console_logger_scope:
-            console_logger_scope.kill(
+        if CONSOLE_LOGGER_SCOPE:
+            CONSOLE_LOGGER_SCOPE.kill(
                 self._console_logger
             )
 
@@ -284,7 +284,7 @@ class AsyncLibrary:
         Executes the provided Robot Framework keyword in a separate thread
         and immediately returns a handle to be used with _*Async Get*_
         '''
-        context = BuiltIn()._get_context()
+        context = BuiltIn()._get_context()    # noqa, E501  pylint: disable=protected-access
         runner = context.get_runner(keyword)
         scope = ScopedContext()
         postpone_id = self._postpone.fork()
@@ -294,8 +294,8 @@ class AsyncLibrary:
                 self._run, scope, postpone_id,
                 runner.run, Keyword(keyword, args=args), context
             )
-        future._scope = scope
-        future._postpone_id = postpone_id
+        future._scope = scope    # pylint: disable=protected-access
+        future._postpone_id = postpone_id    # pylint: disable=protected-access
         with self._lock:
             handle = self._last_thread_handle
             self._last_thread_handle += 1
@@ -350,7 +350,9 @@ class AsyncLibrary:
         for h in handles:
             f = future[h]
             if f in result.done:
-                self._postpone.replay(f._postpone_id)
+                self._postpone.replay(
+                    f._postpone_id    # pylint: disable=protected-access
+                )
 
         if exceptions:
             if len(exceptions) > 1:
@@ -359,7 +361,7 @@ class AsyncLibrary:
                         'async_get caught exceptions',
                         exceptions)
                 except NameError:
-                    raise exceptions[-1]    # pylint: disable=raise-missing-from
+                    raise exceptions[-1]    # noqa, E501 pylint: disable=raise-missing-from
             else:
                 raise exceptions[-1]
 
@@ -381,14 +383,15 @@ class AsyncLibrary:
             attrs,    # pylint: disable=unused-argument
     ):
         '''
-        End Suite callback. Wait for all asynchronous started keywords to terminate
+        End Suite callback. Wait for all asynchronous started keywords to
+        terminate
         '''
         self._wait_all()
 
     def _close(self):
         '''
-        Cleanup Method which is called by robot framework when the object is about to
-        be removed
+        Cleanup Method which is called by robot framework when the object is
+        about to be removed
         '''
         self._wait_all()
         self._executor.shutdown()
@@ -404,7 +407,7 @@ class AsyncLibrary:
         with self._lock:
             for h, f in self._future.items():
                 if f.cancel():
-                    f._scope.kill()
+                    f._scope.kill()    # pylint: disable=protected-access
                 else:
                     handles.append(h)
                     futures[h] = f
@@ -415,4 +418,6 @@ class AsyncLibrary:
         handles.sort()
         for h in handles:
             f = futures[h]
-            self._postpone.replay(f._postpone_id)
+            self._postpone.replay(
+                f._postpone_id    # pylint: disable=protected-access
+            )

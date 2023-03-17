@@ -1,4 +1,5 @@
-from collections import OrderedDict, MappingView
+from collections import OrderedDict
+from collections.abc import MappingView
 from functools import wraps
 from threading import RLock
 
@@ -6,7 +7,7 @@ from threading import RLock
 def protect_callable(func):
     @wraps(func)
     def inner(self, *args, **kwargs):
-        with self._lock:
+        with self._lock:    # pylint: disable=protected-access
             result = func(self, *args, **kwargs)
             if isinstance(result, (MappingView, tuple)):
                 result = list(result)
@@ -21,6 +22,6 @@ class ProtectedOrderedDict(OrderedDict):
     __init__.__doc__ = OrderedDict.__init__.__doc__
 
 
-for name, func in vars(OrderedDict).items():
-    if name != '__init__' and callable(func):
-        setattr(ProtectedOrderedDict, name, protect_callable(func))
+for name, value in vars(OrderedDict).items():
+    if name != '__init__' and callable(value):
+        setattr(ProtectedOrderedDict, name, protect_callable(value))

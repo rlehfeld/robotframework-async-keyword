@@ -5,7 +5,12 @@ undefined = []
 
 
 class ScopedValue:
-    def __init__(self, original=undefined, *, forkvalue=undefined):
+    def __init__(
+            self,
+            original=undefined,
+            *,
+            forkvalue=undefined,
+    ):    # pylint: disable=dangerous-default-value
         self._scopeid = threading.local()
         if original is undefined:
             self._scopes = {}
@@ -30,7 +35,7 @@ class ScopedValue:
 
     def fork(self):
         with self._lock:
-            id = self._next
+            identifier = self._next
             try:
                 value = getattr(self, '_forkvalue')
             except AttributeError:
@@ -40,35 +45,35 @@ class ScopedValue:
                     value = self._scopes[self.scope]
                 else:
                     value = copy()
-            self._scopes[id] = value
+            self._scopes[identifier] = value
             self._next += 1
-            return id
+            return identifier
 
-    def kill(self, id=-1):
-        if id is None:
+    def kill(self, identifier=-1):
+        if identifier is None:
             raise RuntimeError('default scope cannot be killed')
-        if id < 0:
-            id = self.scope
+        if identifier < 0:
+            identifier = self.scope
         with self._lock:
-            self._scopes.pop(id)
+            self._scopes.pop(identifier)
 
         try:
-            if self.scope == id:
+            if self.scope == identifier:
                 del self._scopeid.value
         except AttributeError:
             pass
 
-    def activate(self, id):
+    def activate(self, identifier):
         with self._lock:
-            if id is None:
+            if identifier is None:
                 try:
                     del self._scopeid.value
                 except AttributeError:
                     pass
-            elif id in self._scopes:
-                self._scopeid.value = id
+            elif identifier in self._scopes:
+                self._scopeid.value = identifier
             else:
-                raise RuntimeError(f'a fork with {id=} does not exist')
+                raise RuntimeError(f'a fork with {identifier=} does not exist')
 
     def get(self):
         with self._lock:
@@ -100,7 +105,12 @@ class ScopedDescriptor:
             return scope
 
 
-def scope_parameter(obj, parameter, *, forkvalue=undefined):
+def scope_parameter(
+        obj,
+        parameter,
+        *,
+        forkvalue=undefined,
+):    # pylint: disable=dangerous-default-value
     try:
         scope = getattr(obj, f'_scoped_{parameter}')
     except AttributeError:
@@ -116,8 +126,14 @@ def scope_parameter(obj, parameter, *, forkvalue=undefined):
         setattr(obj, f'_scoped_{parameter}', scope)
         delattr(obj, parameter)
 
-        class PatchedClass(obj.__class__):
-            pass
+        class PatchedClass(obj.__class__):    # noqa, E501 pylint: disable=too-few-public-methods
+            '''
+            dummy class which is required
+            to replace the existing class
+            with a wrapper which includes
+            scoped descriptors for save
+            multi threaded access
+            '''
 
         setattr(PatchedClass, parameter,
                 ScopedDescriptor(f'_scoped_{parameter}'))
