@@ -48,6 +48,7 @@ jobs:
       matrix:
         os: [ 'ubuntu-latest', 'windows-latest' ]
         python-version: ['3.8', '3.9', '3.10', '3.11']
+        robotframework-version: [ '5.0.1', '6.0.2' ]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
@@ -58,7 +59,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install robotframework
+          pip install robotframework==${{ matrix.robotframework-version }}
           pip install -e .
       - name: Executing Robot Framework Tests
         run: |
