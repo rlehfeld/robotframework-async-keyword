@@ -4,10 +4,11 @@ on: [push, pull_request]
 
 jobs:
   flake8:
-    runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.8", "3.9", "3.10", "3.11"]
+        os: [ 'ubuntu-latest', 'fedora-latest', 'windows-latest' ]
+        python-version: ['3.8', '3.9', '3.10', '3.11']
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
       - name: Set up Python ${{ matrix.python-version }}
@@ -23,10 +24,11 @@ jobs:
           flake8 $(git ls-files '*.py')
 
   pylint:
-    runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.8", "3.9", "3.10", "3.11"]
+        os: [ 'ubuntu-latest', 'fedora-latest', 'windows-latest' ]
+        python-version: ['3.8', '3.9', '3.10', '3.11']
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
       - name: Set up Python ${{ matrix.python-version }}
@@ -42,10 +44,11 @@ jobs:
           pylint $(git ls-files '*.py')
 
   robot-framework:
-    runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.8", "3.9", "3.10", "3.11"]
+        os: [ 'ubuntu-latest', 'fedora-latest', 'windows-latest' ]
+        python-version: ['3.8', '3.9', '3.10', '3.11']
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
       - name: Set up Python ${{ matrix.python-version }}
