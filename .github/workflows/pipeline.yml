@@ -60,11 +60,11 @@ jobs:
         run: |
           python -m pip install --upgrade pip
       - name: Install robotframework latest
-        if: ${{ matrix.robotframework-version }}=='latest'
+        if: ${{ matrix.robotframework-version == 'latest' }}
         run: |
           pip install robotframework
       - name: Install robotframework ${{ matrix.robotframework-version }}
-        if: ${{ matrix.robotframework-version }}!='latest'
+        if: ${{ matrix.robotframework-version != 'latest' }}
         run: |
           pip install robotframework==${{ matrix.robotframework-version }}
       - name: Install AsyncLibrary
