@@ -6,7 +6,7 @@ jobs:
   flake8:
     strategy:
       matrix:
-        os: [ 'ubuntu-latest', 'fedora-latest', 'windows-latest' ]
+        os: [ 'ubuntu-latest' ]
         python-version: ['3.8', '3.9', '3.10', '3.11']
     runs-on: ${{ matrix.os }}
     steps:
@@ -26,7 +26,7 @@ jobs:
   pylint:
     strategy:
       matrix:
-        os: [ 'ubuntu-latest', 'fedora-latest', 'windows-latest' ]
+        os: [ 'ubuntu-latest' ]
         python-version: ['3.8', '3.9', '3.10', '3.11']
     runs-on: ${{ matrix.os }}
     steps:
@@ -46,7 +46,7 @@ jobs:
   robot-framework:
     strategy:
       matrix:
-        os: [ 'ubuntu-latest', 'fedora-latest', 'windows-latest' ]
+        os: [ 'ubuntu-latest', 'windows-latest' ]
         python-version: ['3.8', '3.9', '3.10', '3.11']
     runs-on: ${{ matrix.os }}
     steps:

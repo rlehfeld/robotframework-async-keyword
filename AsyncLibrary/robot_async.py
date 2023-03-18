@@ -9,6 +9,7 @@ circumstances or for older or newer version that we are using it for
 import signal
 import threading
 import traceback
+import platform
 from concurrent.futures import ThreadPoolExecutor, wait
 from functools import wraps
 from robot.api import logger
@@ -147,15 +148,11 @@ class BlockSignals:
     '''
     def __init__(self):
         self._current = []
-        try:
-            self._sigmask = getattr(signal, 'pthread_sigmask')
-        except AttributeError:
-            self._sigmask = None
 
     def __enter__(self):
-        if self._sigmask:
+        if platform.system() != 'Windows':
             self._current.append(
-                self._sigmask(
+                signal.pthread_sigmask(
                     signal.SIG_BLOCK,
                     [
                         signal.SIGTERM,
@@ -166,8 +163,8 @@ class BlockSignals:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        if self._sigmask:
-            self._sigmask(signal.SIG_SETMASK, self._current.pop())
+        if platform.system() != 'Windows':
+            signal.pthread_sigmask(signal.SIG_SETMASK, self._current.pop())
 
 
 logger_scope = scope_parameter(
