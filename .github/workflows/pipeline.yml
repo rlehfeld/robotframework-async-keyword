@@ -17,11 +17,11 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip >>$GITHUB_OUTPUT 2>&1
-          pip install flake8 flake8-polyfill robotframework >>$GITHUB_OUTPUT 2>&1
+          python -m pip install --upgrade pip >>"$GITHUB_OUTPUT" 2>&1
+          pip install flake8 flake8-polyfill robotframework >>"$GITHUB_OUTPUT" 2>&1
       - name: Analysing the code with flake8
         run: |
-          flake8 $(git ls-files '*.py') >>$GITHUB_OUTPUT 2>&1
+          flake8 $(git ls-files '*.py') >>"$GITHUB_OUTPUT" 2>&1
 
   pylint:
     strategy:
@@ -37,11 +37,11 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip >>$GITHUB_OUTPUT 2>&1
-          pip install pylint robotframework >>$GITHUB_OUTPUT 2>&1
+          python -m pip install --upgrade pip >>"$GITHUB_OUTPUT" 2>&1
+          pip install pylint robotframework >>"$GITHUB_OUTPUT" 2>&1
       - name: Analysing the code with pylint
         run: |
-          pylint $(git ls-files '*.py') >>$GITHUB_OUTPUT 2>&1
+          pylint $(git ls-files '*.py') >>"$GITHUB_OUTPUT" 2>&1
 
   robot-framework:
     strategy:
@@ -58,18 +58,18 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Upgrade pip
         run: |
-          python -m pip install --upgrade pip >>$GITHUB_OUTPUT 2>&1
+          python -m pip install --upgrade pip >>"$GITHUB_OUTPUT" 2>&1
       - name: Install robotframework latest
         if: ${{ matrix.robotframework-version == 'latest' }}
         run: |
-          pip install robotframework >>$GITHUB_OUTPUT 2>&1
+          pip install robotframework >>"$GITHUB_OUTPUT" 2>&1
       - name: Install robotframework ${{ matrix.robotframework-version }}
         if: ${{ matrix.robotframework-version != 'latest' }}
         run: |
-          pip install robotframework==${{ matrix.robotframework-version }} >>$GITHUB_OUTPUT 2>&1
+          pip install robotframework==${{ matrix.robotframework-version }} >>"$GITHUB_OUTPUT" 2>&1
       - name: Install AsyncLibrary
         run: |
           pip install -e .
       - name: Executing Robot Framework Tests
         run: |
-          robot tests/ >>$GITHUB_OUTPUT 2>&1
+          robot tests/ >>"$GITHUB_OUTPUT" 2>&1
