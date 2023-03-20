@@ -18,7 +18,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install flake8 flake8-polyfill robotframework
+          pip install -U flake8 flake8-polyfill robotframework
       - name: Analysing the code with flake8
         run: |
           flake8 $(git ls-files '*.py')
@@ -38,7 +38,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install setuptools_scm pylint robotframework
+          pip install -U setuptools_scm setuptools pylint robotframework
       - name: Analysing the code with pylint
         run: |
           pylint $(git ls-files '*.py')
@@ -59,11 +59,11 @@ jobs:
       - name: Upgrade pip
         run: |
           python -m pip install --upgrade pip
-          pip install setuptools_scm
+          pip install -U setuptools_scm setuptools
       - name: Install robotframework latest
         if: ${{ matrix.robotframework-version == 'latest' }}
         run: |
-          pip install robotframework
+          pip install -U robotframework
       - name: Install robotframework ${{ matrix.robotframework-version }}
         if: ${{ matrix.robotframework-version != 'latest' }}
         run: |
