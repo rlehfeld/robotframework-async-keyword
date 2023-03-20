@@ -1,6 +1,13 @@
 name: Pipeline Tests
 
-on: [push, pull_request]
+on:
+  push:
+    branches: [ $default-branch ]
+  pull_request:
+    branches: [ $default-branch ]
+
+permissions:
+  contents: read
 
 jobs:
   flake8:
@@ -21,7 +28,7 @@ jobs:
           pip install -U flake8 flake8-polyfill robotframework
       - name: Analysing the code with flake8
         run: |
-          flake8 $(git ls-files '*.py')
+          flake8 $(git ls-files '*.py') --count --show-source --max-complexity=10 --statistics
 
   pylint:
     strategy:
