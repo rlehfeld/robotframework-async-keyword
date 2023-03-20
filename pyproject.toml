@@ -1,6 +1,5 @@
 [build-system]
 requires = ['setuptools>=45', 'setuptools_scm[toml]>=6.2']
-build-backend = 'setuptools.build.meta'
 
 [project]
 name = 'robotframework-async-keyword'
