@@ -1,3 +1,6 @@
+'''
+setup/install instructions for pip
+'''
 from setuptools import setup
 
 setup(
