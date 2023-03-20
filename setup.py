@@ -4,16 +4,16 @@ setup/install instructions for pip
 from setuptools import setup
 
 setup(
-    name='robotframework-async',
-    version='1.1.3',
+    name='robotframework-async-keyword',
+    version='1.1.4',
     description=(
         'Generic Robot Framework library for asynchronous keyword execution'
     ),
     author='René Lehfeld',
     author_email='54720674+rlehfeld@users.noreply.github.com',
     license='MIT',
-    url='https://github.com/rlehfeld/robotframework-async',
-    download_url='https://github.com/rlehfeld/robotframework-async',
+    url='https://github.com/rlehfeld/robotframework-async-keyword',
+    download_url='https://github.com/rlehfeld/robotframework-async-keyword',
     keywords=['async', 'robotframework'],
     install_requires=['robotframework >= 5.0.1'],
     packages=['AsyncLibrary'],
