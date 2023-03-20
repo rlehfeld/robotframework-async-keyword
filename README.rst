@@ -52,3 +52,9 @@ Usage
    .. code:: robotframework
 
       ${return_value}    Async Get    ${handle}
+
+#) To wait with a timeout use
+
+   .. code:: robotframework
+
+      ${return_value}    Async Get    ${handle}    timeout=5 sec
