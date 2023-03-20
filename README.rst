@@ -4,7 +4,21 @@ Generic Robot Framework library for asynchronous keyword execution
 
 Installation
 ============
-Install the library from GitHub using pip:
+Install the latest release via PyPi using pip:
+
+::
+
+    pip install robotframework-async-keyword
+
+Or add to your ``conda.yaml`` file:
+
+::
+
+    - pip:
+        - robotframework-async-keyword
+
+
+In oder to help with development you can directly install from GitHub via:
 
 ::
 
