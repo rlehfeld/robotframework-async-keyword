@@ -33,7 +33,7 @@ Usage
 
       ${handle}    Async Run    some keyword    first argument    second argument
 
-#) To retrieve the return value, a blocking call to async_get is called with the handle:
+#) To retrieve the return value, a blocking call to ``Async Get`` is called with the handle:
 
    .. code:: robotframework
 
