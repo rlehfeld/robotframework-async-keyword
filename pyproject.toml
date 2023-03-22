@@ -29,7 +29,7 @@ dynamic = ['version', 'readme']
 
 [tool.setuptools]
 packages = ['AsyncLibrary']
-obsoletes = ['robotframework-async']
+obsoletes = ['robotframework_async']
 
 [tool.setuptools.dynamic]
 readme = {file = ['README.rst']}
