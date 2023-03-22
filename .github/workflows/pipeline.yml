@@ -80,4 +80,4 @@ jobs:
           pip install -e .
       - name: Executing Robot Framework Tests
         run: |
-          robot tests/
+          robot test/
