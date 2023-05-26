@@ -5,7 +5,7 @@ thread specific
 import threading
 
 
-undefined = []
+_UNDEFINED = object()
 
 
 class ScopedValue:
@@ -17,12 +17,12 @@ class ScopedValue:
 
     def __init__(
             self,
-            original=undefined,
+            original=_UNDEFINED,
             *,
-            forkvalue=undefined,
-    ):    # pylint: disable=dangerous-default-value
+            forkvalue=_UNDEFINED,
+    ):
         self._scopeid = threading.local()
-        if original is undefined:
+        if original is _UNDEFINED:
             self._scopes = {}
         else:
             self._scopes = {None: original}
@@ -34,7 +34,7 @@ class ScopedValue:
                 self.__doc__ = original.__doc__
             except AttributeError:
                 pass
-        if forkvalue is not undefined:
+        if forkvalue is not _UNDEFINED:
             self._forkvalue = forkvalue
         self._lock = threading.Lock()
         self._next = 0
@@ -149,8 +149,8 @@ def scope_parameter(
         obj,
         parameter,
         *,
-        forkvalue=undefined,
-):    # pylint: disable=dangerous-default-value
+        forkvalue=_UNDEFINED,
+):
     '''
     decorator an paramter in an object through monkey patching
     so it can have different values in different threads
@@ -166,7 +166,7 @@ def scope_parameter(
         original = getattr(obj, parameter)
 
         kwargs = {'original': original}
-        if forkvalue is not undefined:
+        if forkvalue is not _UNDEFINED:
             kwargs['forkvalue'] = forkvalue
         scope = ScopedValue(**kwargs)
         setattr(obj, f'_scoped_{parameter}', scope)

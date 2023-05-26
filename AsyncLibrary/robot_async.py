@@ -17,7 +17,7 @@ from robot.libraries.BuiltIn import BuiltIn
 from robot.libraries.DateTime import convert_time
 from robot.running import Keyword
 from robot.output.logger import LOGGER
-from .scoped_value import scope_parameter, undefined
+from .scoped_value import scope_parameter, _UNDEFINED
 from .protected_ordered_dict import ProtectedOrderedDict
 
 
@@ -224,7 +224,7 @@ class ScopedContext:
             for parameter in attibute:
                 parent = current
                 current = getattr(parent, parameter)
-            forkvalue = self._construct.get(parameter, undefined)
+            forkvalue = self._construct.get(parameter, _UNDEFINED)
             scope = scope_parameter(parent, parameter, forkvalue=forkvalue)
             if not isinstance(self._context.namespace._kw_store.libraries,
                               ProtectedOrderedDict):
