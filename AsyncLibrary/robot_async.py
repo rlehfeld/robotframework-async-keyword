@@ -196,7 +196,7 @@ class ScopedContext:
     '''
     _attributes = [
         ['test'],
-        ['user_keywords'],
+        [['user_keywords'], []],
         [['step_types'], ['steps']],
         ['timeout_occurred'],
         ['namespace', 'variables', '_scopes'],
@@ -224,19 +224,20 @@ class ScopedContext:
                 attributelist = [attributelist]
             for count, attribute in reversed(tuple(enumerate(attributelist))):
                 current = self._context
-                try:
-                    for parameter in attribute:
-                        parent = current
-                        current = getattr(parent, parameter)
-                    forkvalue = self._construct.get(parameter, _UNDEFINED)  # noqa, E501  pylint:disable=undefined-loop-variable
-                    scope = scope_parameter(
-                        parent, parameter, forkvalue=forkvalue  # noqa, E501  pylint:disable=undefined-loop-variable
-                    )
-                    break
-                except AttributeError:
-                    if count <= 0:
-                        raise
-                    continue
+                if attribute:
+                    try:
+                        for parameter in attribute:
+                            parent = current
+                            current = getattr(parent, parameter)
+                        forkvalue = self._construct.get(parameter, _UNDEFINED)
+                        scope = scope_parameter(
+                            parent, parameter, forkvalue=forkvalue
+                        )
+                        break
+                    except AttributeError:
+                        if count <= 0:
+                            raise
+                        continue
             if not isinstance(self._context.namespace._kw_store.libraries,
                               ProtectedOrderedDict):
                 self._context.namespace._kw_store.libraries = (
