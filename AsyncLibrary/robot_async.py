@@ -228,9 +228,9 @@ class ScopedContext:
                     for parameter in attribute:
                         parent = current
                         current = getattr(parent, parameter)
-                    forkvalue = self._construct.get(parameter, _UNDEFINED)
+                    forkvalue = self._construct.get(parameter, _UNDEFINED)  # noqa, E501  pylint:disable=undefined-loop-variable
                     scope = scope_parameter(
-                        parent, parameter, forkvalue=forkvalue
+                        parent, parameter, forkvalue=forkvalue  # noqa, E501  pylint:disable=undefined-loop-variable
                     )
                     break
                 except AttributeError:
