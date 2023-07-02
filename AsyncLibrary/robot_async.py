@@ -231,11 +231,14 @@ class ScopedContext:
                 except AttributeError:
                     if count <= 0:
                         raise
+                    else:
+                        continue
                 else:
                     forkvalue = self._construct.get(parameter, _UNDEFINED)
                     scope = scope_parameter(
                         parent, parameter, forkvalue=forkvalue
                     )
+                    break
             if not isinstance(self._context.namespace._kw_store.libraries,
                               ProtectedOrderedDict):
                 self._context.namespace._kw_store.libraries = (
