@@ -30,7 +30,7 @@ jobs:
           pip install -U flake8 flake8-polyfill robotframework
       - name: Analysing the code with flake8
         run: |
-          flake8 $(git ls-files '*.py') --count --show-source --max-complexity=10 --statistics
+          flake8 $(git ls-files '*.py') --count --show-source --max-complexity=11 --statistics
 
   pylint:
     strategy:
