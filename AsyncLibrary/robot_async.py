@@ -201,7 +201,7 @@ class ScopedContext:
         ['timeout_occurred'],
         ['namespace', 'variables', '_scopes'],
         ['namespace', 'variables', '_variables_set', '_scopes'],
-        ['_started_keywords'],
+        ['_started_keywords', []],
         ['in_suite_teardown'],
         ['in_test_teardown'],
         ['in_keyword_teardown'],
