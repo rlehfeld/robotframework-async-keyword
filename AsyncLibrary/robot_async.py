@@ -222,7 +222,7 @@ class ScopedContext:
         for attributelist in self._attributes:
             if not isinstance(attributelist[0], list):
                 attributelist = [attributelist]
-            for count, attribute in reversed(enumerate(attributelist)):
+            for count, attribute in reversed(tuple(enumerate(attributelist))):
                 current = self._context
                 try:
                     for parameter in attribute:
@@ -231,8 +231,11 @@ class ScopedContext:
                 except AttributeError:
                     if count <= 0:
                         raise
-            forkvalue = self._construct.get(parameter, _UNDEFINED)
-            scope = scope_parameter(parent, parameter, forkvalue=forkvalue)
+                else:
+                    forkvalue = self._construct.get(parameter, _UNDEFINED)
+                    scope = scope_parameter(
+                        parent, parameter, forkvalue=forkvalue
+                    )
             if not isinstance(self._context.namespace._kw_store.libraries,
                               ProtectedOrderedDict):
                 self._context.namespace._kw_store.libraries = (
