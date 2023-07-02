@@ -223,29 +223,30 @@ class ScopedContext:
             if not isinstance(attributelist[0], list):
                 attributelist = [attributelist]
             for count, attribute in reversed(tuple(enumerate(attributelist))):
+                if not attribute:
+                    continue
                 current = self._context
-                if attribute:
-                    try:
-                        for parameter in attribute:
-                            parent = current
-                            current = getattr(parent, parameter)
-                        forkvalue = self._construct.get(parameter, _UNDEFINED)
-                        scope = scope_parameter(
-                            parent, parameter, forkvalue=forkvalue
-                        )
-                        break
-                    except AttributeError:
-                        if count <= 0:
-                            raise
-                        continue
-            if not isinstance(self._context.namespace._kw_store.libraries,
-                              ProtectedOrderedDict):
-                self._context.namespace._kw_store.libraries = (
-                    ProtectedOrderedDict(
-                        self._context.namespace._kw_store.libraries
-                    )
+                try:
+                    for parameter in attribute:
+                        parent = current
+                        current = getattr(parent, parameter)
+                except AttributeError:
+                    if count <= 0:
+                        raise
+                    continue
+                forkvalue = self._construct.get(parameter, _UNDEFINED)
+                scope = scope_parameter(
+                    parent, parameter, forkvalue=forkvalue
                 )
-            self._forks.append(scope.fork())
+                if not isinstance(self._context.namespace._kw_store.libraries,
+                                  ProtectedOrderedDict):
+                    self._context.namespace._kw_store.libraries = (
+                        ProtectedOrderedDict(
+                            self._context.namespace._kw_store.libraries
+                        )
+                    )
+                self._forks.append(scope.fork())
+                break
 
         self._logger = logger_scope.fork()
         if CONSOLE_LOGGER_SCOPE:
