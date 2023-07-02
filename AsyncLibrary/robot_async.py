@@ -219,12 +219,14 @@ class ScopedContext:
     def __init__(self):
         self._context = BuiltIn()._get_context()
         self._forks = []
-        for attributelist in self._attributes:
+        for index, attributelist in reversed(
+                tuple(enumerate(self._attributes))):
             if not isinstance(attributelist[0], list):
                 attributelist = [attributelist]
             for count, attribute in reversed(tuple(enumerate(attributelist))):
                 if not attribute:
-                    continue
+                    del self._attributes[index]
+                    break
                 current = self._context
                 try:
                     for parameter in attribute:
@@ -234,9 +236,9 @@ class ScopedContext:
                     if count <= 0:
                         raise
                     continue
-                forkvalue = self._construct.get(parameter, _UNDEFINED)
+                forkvalue = self._construct.get(parameter, _UNDEFINED)    # noqa, E501  pylint: disable=undefined-loop-variable
                 scope = scope_parameter(
-                    parent, parameter, forkvalue=forkvalue
+                    parent, parameter, forkvalue=forkvalue    # noqa, E501  pylint: disable=undefined-loop-variable
                 )
                 if not isinstance(self._context.namespace._kw_store.libraries,
                                   ProtectedOrderedDict):
@@ -246,6 +248,7 @@ class ScopedContext:
                         )
                     )
                 self._forks.append(scope.fork())
+                self._attributes[index] = attribute
                 break
 
         self._logger = logger_scope.fork()
