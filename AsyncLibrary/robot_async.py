@@ -219,13 +219,13 @@ class ScopedContext:
     def __init__(self):
         self._context = BuiltIn()._get_context()
         self._forks = []
-        for attibutelist in self._attributes:
+        for attributelist in self._attributes:
             if not isinstance(attributelist[0], list):
                 attributelist = [attributelist]
             for count, attribute in reversed(enumerate(attributelist)):
                 current = self._context
                 try:
-                    for parameter in attibute:
+                    for parameter in attribute:
                         parent = current
                         current = getattr(parent, parameter)
                 except AttributeError:
