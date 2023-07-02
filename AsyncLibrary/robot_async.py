@@ -197,7 +197,7 @@ class ScopedContext:
     _attributes = [
         ['test'],
         ['user_keywords'],
-        ['step_types'],
+        [['step_types'], ['steps']],
         ['timeout_occurred'],
         ['namespace', 'variables', '_scopes'],
         ['namespace', 'variables', '_variables_set', '_scopes'],
@@ -219,11 +219,18 @@ class ScopedContext:
     def __init__(self):
         self._context = BuiltIn()._get_context()
         self._forks = []
-        for attibute in self._attributes:
-            current = self._context
-            for parameter in attibute:
-                parent = current
-                current = getattr(parent, parameter)
+        for attibutelist in self._attributes:
+            if not isinstance(attributelist[0], list):
+                attributelist = [attributelist]
+            for count, attribute in reversed(enumerate(attributelist)):
+                current = self._context
+                try:
+                    for parameter in attibute:
+                        parent = current
+                        current = getattr(parent, parameter)
+                except AttributeError:
+                    if count <= 0:
+                        raise
             forkvalue = self._construct.get(parameter, _UNDEFINED)
             scope = scope_parameter(parent, parameter, forkvalue=forkvalue)
             if not isinstance(self._context.namespace._kw_store.libraries,
