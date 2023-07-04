@@ -459,12 +459,6 @@ class AsyncLibrary:
             return ret
         return ret[-1]
 
-    def async_get_all(self, timeout=None):
-        '''
-        Blocks until the keyword spawned by _*Async Run*_ include a result.
-        '''
-        return self.async_get(timeout=timeout)
-
     def _end_suite(
             self,
             suite,    # pylint: disable=unused-argument
