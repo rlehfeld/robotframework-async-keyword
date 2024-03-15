@@ -17,10 +17,10 @@ from robot.libraries.BuiltIn import BuiltIn
 from robot.libraries.DateTime import convert_time
 try:
     from robot.running.userkeywordrunner import KeywordData
-    _run_requires_keywordresult = True
+    _RUN_REQUIRES_KEYWORDRESULT = True
 except ImportError:
     from robot.running import Keyword as KeywordData
-    _run_requires_keywordresult = False
+    _RUN_REQUIRES_KEYWORDRESULT = False
 from robot.result import Keyword as KeywordResult
 from robot.output.logger import LOGGER
 from .scoped_value import scope_parameter, _UNDEFINED
@@ -369,7 +369,7 @@ class AsyncLibrary:
 
     def _run(self, scope, postpone_id, func, *args, **kwargs):
         with self._postpone(postpone_id), scope:
-            if _run_requires_keywordresult:
+            if _RUN_REQUIRES_KEYWORDRESULT:
                 kwargs['result'] = KeywordResult()
             return func(*args, **kwargs)
 
