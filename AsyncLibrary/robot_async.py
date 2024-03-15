@@ -15,7 +15,13 @@ from functools import wraps
 from robot.api import logger
 from robot.libraries.BuiltIn import BuiltIn
 from robot.libraries.DateTime import convert_time
-from robot.running import Keyword
+try:
+    from robot.running.userkeywordrunner import KeywordData
+    _run_requires_keywordresult = True
+except ImportError:
+    from robot.running import Keyword as KeywordData
+    _run_requires_keywordresult = False
+from robot.result import Keyword as KeywordResult
 from robot.output.logger import LOGGER
 from .scoped_value import scope_parameter, _UNDEFINED
 from .protected_ordered_dict import ProtectedOrderedDict
@@ -37,7 +43,12 @@ class Postpone:
 
         self._context = BuiltIn()._get_context()
         output = getattr(self._context, 'output', None)
-        xmllogger = getattr(output, '_xmllogger', None)
+        xmlloggeradapter = getattr(output, '_xml_logger', None)
+        if xmlloggeradapter:
+            xmllogger = getattr(xmlloggeradapter, 'logger', None)
+        else:
+            xmllogger = getattr(output, '_xmllogger', None)
+        getattr(xmllogger, '_writer', None)
         writer = getattr(xmllogger, '_writer', None)
         if writer:
             writer.start = self.postpone(writer.start)
@@ -358,6 +369,8 @@ class AsyncLibrary:
 
     def _run(self, scope, postpone_id, func, *args, **kwargs):
         with self._postpone(postpone_id), scope:
+            if _run_requires_keywordresult:
+                kwargs['result'] = KeywordResult()
             return func(*args, **kwargs)
 
     def async_run(self, keyword, *args):
@@ -373,7 +386,7 @@ class AsyncLibrary:
         with BlockSignals():
             future = self._executor.submit(
                 self._run, scope, postpone_id,
-                runner.run, Keyword(keyword, args=args), context
+                runner.run, KeywordData(keyword, args=args), context=context
             )
         future._scope = scope    # pylint: disable=protected-access
         future._postpone_id = postpone_id    # pylint: disable=protected-access
