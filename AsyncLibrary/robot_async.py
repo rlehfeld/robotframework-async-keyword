@@ -373,7 +373,7 @@ class AsyncLibrary:
                 kwargs['result'] = KeywordResult()
             return func(*args, **kwargs)
 
-    def async_run(self, keyword, *args):
+    def async_run(self, keyword, *args, **kwargs):
         '''
         Executes the provided Robot Framework keyword in a separate thread
         and immediately returns a handle to be used with _*Async Get*_
@@ -386,7 +386,11 @@ class AsyncLibrary:
         with BlockSignals():
             future = self._executor.submit(
                 self._run, scope, postpone_id,
-                runner.run, KeywordData(keyword, args=args), context=context
+                runner.run,
+                KeywordData(
+                    keyword,
+                    args=tuple(args) + tuple(kwargs.items())),
+                context=context
             )
         future._scope = scope    # pylint: disable=protected-access
         future._postpone_id = postpone_id    # pylint: disable=protected-access

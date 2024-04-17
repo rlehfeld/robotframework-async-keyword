@@ -9,6 +9,7 @@ Example
     ${handle 4}    Async Run    Deeply Nested Fail    ${4}
     ${handle 5}    Async Run    Deeply Nested Fail    ${5}
     ${handle 6}    Async Run    Deeply Nested Fail    ${6}
+    ${handle 7}    Async Run    Nested Keyword    ${2}    value2=${5}
 
     ${handles}    Create List
     ...    ${handle 3}
@@ -31,10 +32,11 @@ Example
 
 *** Keywords ***
 Nested Keyword
-    [Arguments]    ${value}
+    [Arguments]    ${value1}    ${value2}=${2}
     Sleep    1 sec
-    Log To Console    Got Value ${value}
-    ${return}    Set Variable    ${value}
+    Log To Console    Got Value1 ${value1}
+    Log To Console    Got Value2 ${value2}
+    ${return}    Set Variable    ${value1}
     RETURN    ${return}
 
 Deeply Nested Keyword
