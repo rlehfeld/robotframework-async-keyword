@@ -1,7 +1,12 @@
+/AsyncLibrary/_version.py
+/venv*/
+/allowed_signers
+\#*\#
 *~
 *.pyc
 *.egg-info/
 log.html
 output.xml
 report.html
-AsyncLibrary/_version.py
+syslog.txt
+debug.txt
