@@ -184,6 +184,7 @@ logger_scope = scope_parameter(
     forkvalue=0,
 )
 
+CONSOLE_LOGGER_SCOPE = None
 if LOGGER._console_logger:    # pylint: disable=protected-access
     try:
         CONSOLE_LOGGER_SCOPE = scope_parameter(
@@ -192,7 +193,7 @@ if LOGGER._console_logger:    # pylint: disable=protected-access
             forkvalue=0,
         )
     except AttributeError:
-        CONSOLE_LOGGER_SCOPE = None
+        pass
 
 
 class ScopedContext:
