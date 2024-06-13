@@ -40,7 +40,7 @@ class Postpone:
         self._id = threading.local()
         self._next = 0
 
-        self._context = BuiltIn()._get_context()
+        self._context = BuiltIn()._get_context()    # noqa, E501  pylint: disable=protected-access
         output = getattr(self._context, 'output', None)
         xmlloggeradapter = getattr(output, '_xml_logger', None)
         if xmlloggeradapter:
