@@ -366,7 +366,13 @@ class AsyncLibrary:
         with BlockSignals():
             self._executor = ThreadPoolExecutor()
         self._lock = threading.Lock()
-        self._postpone = Postpone()
+        self._postpone = None
+        if BuiltIn().robot_running:
+            self._init_postpone()
+
+    def _init_postpone(self):
+        if self._postpone is None:
+            self._postpone = Postpone()
 
     def _run(self, scope, postpone_id, func, *args, **kwargs):
         with self._postpone(postpone_id), scope:
@@ -476,6 +482,16 @@ class AsyncLibrary:
         if retlist:
             return ret
         return ret[-1]
+
+    def _start_suite(
+            self,
+            suite,    # pylint: disable=unused-argument
+            attrs,    # pylint: disable=unused-argument
+    ):
+        '''
+        Start Suite callback.
+        '''
+        self._init_postpone()
 
     def _end_suite(
             self,
