@@ -366,8 +366,14 @@ class AsyncLibrary:
         with BlockSignals():
             self._executor = ThreadPoolExecutor()
         self._lock = threading.Lock()
-        self._postpone = Postpone()
+        self._pp = None
 
+    @property
+    def _postpone(self):
+      if not self._pp:
+        self._pp = Postpone()
+
+      return self._pp
     def _run(self, scope, postpone_id, func, *args, **kwargs):
         with self._postpone(postpone_id), scope:
             if _RUN_REQUIRES_KEYWORDRESULT:
