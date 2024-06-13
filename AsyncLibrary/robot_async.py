@@ -8,7 +8,6 @@ circumstances or for older or newer version that we are using it for
 '''
 import threading
 import traceback
-import platform
 from concurrent.futures import ThreadPoolExecutor, wait
 from functools import wraps
 from robot.api import logger
@@ -202,7 +201,7 @@ class ScopedContext:
     }
 
     def __init__(self):
-        self._context = BuiltIn()._get_context()
+        self._context = BuiltIn()._get_context()    # noqa, E501  pylint: disable=protected-access
         self._forks = []
         for index, attributelist in reversed(
                 tuple(enumerate(self._attributes))):
@@ -345,7 +344,7 @@ class AsyncLibrary:
     @staticmethod
     def _is_robot_running():
         try:
-            BuiltIn()._get_context()
+            BuiltIn()._get_context()    # noqa, E501  pylint: disable=protected-access
             return True
         except RobotNotRunningError:
             return False
