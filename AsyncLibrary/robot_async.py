@@ -13,7 +13,7 @@ import platform
 from concurrent.futures import ThreadPoolExecutor, wait
 from functools import wraps
 from robot.api import logger
-from robot.libraries.BuiltIn import BuiltIn
+from robot.libraries.BuiltIn import BuiltIn, RobotNotRunningError
 from robot.libraries.DateTime import convert_time
 try:
     from robot.running.userkeywordrunner import KeywordData
@@ -367,8 +367,16 @@ class AsyncLibrary:
             self._executor = ThreadPoolExecutor()
         self._lock = threading.Lock()
         self._postpone = None
-        if BuiltIn().robot_running:
+        if self._is_robot_running():
             self._init_postpone()
+
+    @staticmethod
+    def _is_robot_running():
+        try:
+            BuiltIn()._get_context()
+            return True
+        except RobotNotRunningError:
+            return False
 
     def _init_postpone(self):
         if self._postpone is None:
