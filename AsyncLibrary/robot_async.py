@@ -6,7 +6,6 @@ prepared for multi threaded execution of keywords
 Just saying this, it is not guaranteed that it will work under all
 circumstances or for older or newer version that we are using it for
 '''
-import signal
 import threading
 import traceback
 import platform
@@ -150,32 +149,6 @@ class Postpone:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.deactivate()
-
-
-class BlockSignals:
-    '''
-    simple scope guard to automatically block
-    and unblock signals
-    '''
-    def __init__(self):
-        self._current = []
-
-    def __enter__(self):
-        if platform.system() != 'Windows':
-            self._current.append(
-                signal.pthread_sigmask(
-                    signal.SIG_BLOCK,
-                    [
-                        signal.SIGTERM,
-                        signal.SIGINT,
-                    ]
-                )
-            )
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        if platform.system() != 'Windows':
-            signal.pthread_sigmask(signal.SIG_SETMASK, self._current.pop())
 
 
 logger_scope = scope_parameter(
@@ -363,8 +336,7 @@ class AsyncLibrary:
         self.ROBOT_LIBRARY_LISTENER = [self]    # pylint: disable=invalid-name
         self._futures = {}
         self._last_thread_handle = 0
-        with BlockSignals():
-            self._executor = ThreadPoolExecutor()
+        self._executor = ThreadPoolExecutor()
         self._lock = threading.Lock()
         self._postpone = None
         if self._is_robot_running():
@@ -398,15 +370,14 @@ class AsyncLibrary:
         scope = ScopedContext()
         postpone_id = self._postpone.fork()
 
-        with BlockSignals():
-            future = self._executor.submit(
-                self._run, scope, postpone_id,
-                runner.run,
-                KeywordData(
-                    keyword,
-                    args=tuple(args) + tuple(kwargs.items())),
-                context=context
-            )
+        future = self._executor.submit(
+            self._run, scope, postpone_id,
+            runner.run,
+            KeywordData(
+                keyword,
+                args=tuple(args) + tuple(kwargs.items())),
+            context=context
+        )
         future._scope = scope    # pylint: disable=protected-access
         future._postpone_id = postpone_id    # pylint: disable=protected-access
         with self._lock:
