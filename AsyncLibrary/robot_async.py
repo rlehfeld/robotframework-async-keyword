@@ -22,7 +22,8 @@ except ImportError:
 try:
     from robot.running.model import Argument
 except ImportError:
-    def Argument(*args):
+    def Argument(*args):  # pylint: disable=invalid-name
+        """legacy argument function before RF 7.0.1"""
         return tuple(args)
 from robot.result import Keyword as KeywordResult
 from robot.output.logger import LOGGER
