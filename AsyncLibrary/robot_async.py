@@ -19,6 +19,10 @@ try:
 except ImportError:
     from robot.running import Keyword as KeywordData
     _RUN_REQUIRES_KEYWORDRESULT = False
+try:
+    from robot.running.model import Argument
+except ImportError:
+    Argument = tuple
 from robot.result import Keyword as KeywordResult
 from robot.output.logger import LOGGER
 from .scoped_value import scope_parameter, _UNDEFINED
@@ -374,7 +378,7 @@ class AsyncLibrary:
             runner.run,
             KeywordData(
                 keyword,
-                args=tuple(args) + tuple(kwargs.items())),
+                args=tuple(args) + tuple(Argument(key, value) for key, value in kwargs.items()),
             context=context
         )
         future._scope = scope    # pylint: disable=protected-access
