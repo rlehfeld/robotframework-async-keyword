@@ -378,7 +378,10 @@ class AsyncLibrary:
             runner.run,
             KeywordData(
                 keyword,
-                args=tuple(args) + tuple(Argument(key, value) for key, value in kwargs.items()),
+                args=tuple(args) + tuple(
+                    Argument(key, value) for key, value in kwargs.items()
+                )
+            ),
             context=context
         )
         future._scope = scope    # pylint: disable=protected-access
