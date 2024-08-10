@@ -22,7 +22,8 @@ except ImportError:
 try:
     from robot.running.model import Argument
 except ImportError:
-    Argument = tuple
+    def Argument(*args):
+        return tuple(args)
 from robot.result import Keyword as KeywordResult
 from robot.output.logger import LOGGER
 from .scoped_value import scope_parameter, _UNDEFINED
