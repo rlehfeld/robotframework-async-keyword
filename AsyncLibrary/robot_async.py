@@ -8,6 +8,7 @@ circumstances or for older or newer version that we are using it for
 '''
 import threading
 import traceback
+import builtins
 from concurrent.futures import ThreadPoolExecutor, wait
 from functools import wraps
 from robot.api import logger
@@ -456,11 +457,14 @@ class AsyncLibrary:
         if exceptions:
             if len(exceptions) > 1:
                 try:
-                    raise ExceptionGroup(
+                    eg = getattr(builtins, ExceptionGroup)
+                except AttributeError:
+                    raise exceptions[-1]
+                else
+                    raise eg(
                         'async_get caught exceptions',
-                        exceptions)
-                except NameError:
-                    raise exceptions[-1]    # noqa, E501 pylint: disable=raise-missing-from
+                        exceptions
+                    )
             else:
                 raise exceptions[-1]
 
