@@ -456,17 +456,15 @@ class AsyncLibrary:
 
         if exceptions:
             if len(exceptions) > 1:
-                try:
-                    eg = getattr(builtins, 'ExceptionGroup')
-                except AttributeError:
+                eg = getattr(builtins, 'ExceptionGroup', None)
+                if eg is None:
                     raise exceptions[-1]
-                else:
-                    raise eg(
-                        'async_get caught exceptions',
-                        exceptions
-                    )
-            else:
-                raise exceptions[-1]
+                raise eg(
+                    'async_get caught exceptions',
+                    exceptions
+                )
+         else:
+             raise exceptions[-1]
 
         ret = [futures[h].result() for h in handles]
 
