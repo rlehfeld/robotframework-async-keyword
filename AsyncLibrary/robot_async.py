@@ -460,7 +460,7 @@ class AsyncLibrary:
                     eg = getattr(builtins, ExceptionGroup)
                 except AttributeError:
                     raise exceptions[-1]
-                else
+                else:
                     raise eg(
                         'async_get caught exceptions',
                         exceptions
