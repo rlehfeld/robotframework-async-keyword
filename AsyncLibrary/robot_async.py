@@ -463,8 +463,7 @@ class AsyncLibrary:
                     'async_get caught exceptions',
                     exceptions
                 )
-            else:
-                raise exceptions[-1]
+            raise exceptions[-1]
 
         ret = [futures[h].result() for h in handles]
 
