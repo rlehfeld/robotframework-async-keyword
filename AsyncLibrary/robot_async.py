@@ -457,7 +457,7 @@ class AsyncLibrary:
         if exceptions:
             if len(exceptions) > 1:
                 try:
-                    eg = getattr(builtins, ExceptionGroup)
+                    eg = getattr(builtins, 'ExceptionGroup')
                 except AttributeError:
                     raise exceptions[-1]
                 else:
