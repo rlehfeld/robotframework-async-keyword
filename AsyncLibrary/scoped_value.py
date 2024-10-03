@@ -97,7 +97,7 @@ class ScopedValue:
             elif identifier in self._scopes:
                 self._scopeid.value = identifier
             else:
-                raise RuntimeError(f'a fork with {identifier=} does not exist')
+                raise RuntimeError(f'a fork with {identifier} does not exist')
 
     def get(self):
         '''

@@ -34,7 +34,7 @@ class ProtectedOrderedDict(OrderedDict):
     which is thread save when using and extending
     across different threads
     '''
-    def __init__(self, other=(), /, **kwds):
+    def __init__(self, other=(), **kwds):
         self._lock = RLock()
         super().__init__(other, **kwds)
     __init__.__doc__ = OrderedDict.__init__.__doc__

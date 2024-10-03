@@ -14,4 +14,4 @@ the Robot Framework Version that we have in use
 TODO: add tests for the functionality so it will be executed
       as part of the gitlab testing pipeline
 '''
-from .robot_async import AsyncLibrary  # noqa, F401
+from AsyncLibrary import AsyncLibrary  # noqa, F401
