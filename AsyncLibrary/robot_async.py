@@ -48,28 +48,39 @@ class Postpone:
 
         self._context = BuiltIn()._get_context()    # noqa, E501  pylint: disable=protected-access
         output = getattr(self._context, 'output', None)
-
-        output_adapter = None
-        for p in ['output_file', '_xml_logger']:
-            output_adapter = getattr(output, p, None)
-            if output_adapter:
-                break
-        if not output_adapter:
-            output_adapter = output
-
-        for p in ['logger', '_xmllogger', '_xml_logger']:
-            xmllogger = getattr(output_adapter, p, None)
-            if xmllogger:
-                break
-
-        assert xmllogger, 'RF version not supported'
-
-        writer = getattr(xmllogger, '_writer', None)
-        assert writer, 'RF version not supported'
-
+        output_adapter = self.get_output_adapter(output)
+        logger = self.get_logger(output_adapter)
+        writer = self.get_writer(logger)
         writer.start = self.postpone(writer.start)
         writer.end = self.postpone(writer.end)
         writer.element = self.postpone(writer.element)
+
+    @staticmethod
+    def get_output_adapter(output):
+        for p in ['output_file', '_xml_logger']:
+            try:
+                return getattr(output, p)
+            except AttributeError:
+                pass
+        return output
+
+    @staticmethod
+    def get_logger(output_adapter):
+        for p in ['logger', '_xmllogger']:
+            try:
+                return getattr(output_adapter, p)
+            except AttributeError:
+                pass
+        raise RuntimeError('not rule to find logger => RF version not supported')
+
+    @staticmethod
+    def get_writer(logger):
+        for p in ['_writer']:
+            try:
+                return getattr(logger, p)
+            except AttributeError:
+                pass
+        raise RuntimeError('no rule to find writer => RF version not supported')
 
     def fork(self):
         '''
