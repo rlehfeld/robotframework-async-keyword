@@ -58,7 +58,7 @@ class Postpone:
     @staticmethod
     def _get_output_adapter(output):
         """find output adapter"""
-        for p in ['output_file', '_xml_logger']:
+        for p in ['_xml_logger', 'output_file']:
             try:
                 return getattr(output, p)
             except AttributeError:
