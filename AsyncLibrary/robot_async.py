@@ -23,7 +23,7 @@ except ImportError:
 try:
     from robot.running.model import Argument
 except ImportError:
-    def Argument(*args):  # pylint: disable=invalid-name
+    def Argument(*args):  # noqa: N802 pylint: disable=invalid-name
         """legacy argument function before RF 7.0.1"""
         return tuple(args)
 from robot.result import Keyword as KeywordResult
@@ -48,13 +48,15 @@ class Postpone:
 
         self._context = BuiltIn()._get_context()    # noqa, E501  pylint: disable=protected-access
         output = getattr(self._context, 'output', None)
-        xmlloggeradapter = getattr(output, '_xml_logger', None)
-        if xmlloggeradapter:
-            xmllogger = getattr(xmlloggeradapter, 'logger', None)
+        output_file = getattr(output, 'output_file', None)
+        if not output_file:
+            output_file = getattr(output, '_xml_logger', None)
+        if output_file:
+            xmllogger = getattr(output_file, 'logger', None)
         else:
             xmllogger = getattr(output, '_xmllogger', None)
-        getattr(xmllogger, '_writer', None)
-        writer = getattr(xmllogger, '_writer', None)
+        if xmllogger:
+            writer = getattr(xmllogger, '_writer', None)
         if writer:
             writer.start = self.postpone(writer.start)
             writer.end = self.postpone(writer.end)
@@ -157,22 +159,33 @@ class Postpone:
         self.deactivate()
 
 
-logger_scope = scope_parameter(
-    LOGGER,
-    '_started_keywords',
-    forkvalue=0,
-)
+LOGGER_SCOPE = None
+try:
+    LOGGER_SCOPE = scope_parameter(
+        LOGGER,
+        '_started_keywords',
+        forkvalue=0,
+    )
+except AttributeError:
+    pass
 
 CONSOLE_LOGGER_SCOPE = None
 if LOGGER._console_logger:    # pylint: disable=protected-access
     try:
         CONSOLE_LOGGER_SCOPE = scope_parameter(
-            LOGGER._console_logger.logger,    # noqa, E501  pylint: disable=protected-access
-            '_started_keywords',
+            LOGGER._console_logger,    # noqa, E501  pylint: disable=protected-access
+            'started_keywords',
             forkvalue=0,
         )
     except AttributeError:
-        pass
+        try:
+            CONSOLE_LOGGER_SCOPE = scope_parameter(
+                LOGGER._console_logger.logger,    # noqa, E501  pylint: disable=protected-access
+                '_started_keywords',
+                forkvalue=0,
+            )
+        except AttributeError:
+            pass
 
 
 class ScopedContext:
@@ -242,7 +255,8 @@ class ScopedContext:
                 self._attributes[index] = attribute
                 break
 
-        self._logger = logger_scope.fork()
+        if LOGGER_SCOPE:
+            self._logger = LOGGER_SCOPE.fork()
         if CONSOLE_LOGGER_SCOPE:
             self._console_logger = CONSOLE_LOGGER_SCOPE.fork()
 
@@ -259,7 +273,10 @@ class ScopedContext:
             scope = getattr(current, f'_scoped_{attibute[-1]}')
             scope.activate(context)
 
-        logger_scope.activate(self._logger)
+        if LOGGER_SCOPE:
+            LOGGER_SCOPE.activate(
+                self._logger
+            )
         if CONSOLE_LOGGER_SCOPE:
             CONSOLE_LOGGER_SCOPE.activate(
                 self._console_logger
@@ -280,7 +297,10 @@ class ScopedContext:
                 scope.kill(context)
             self._forks.append(None)
 
-        logger_scope.kill(self._logger)
+        if LOGGER_SCOPE:
+            LOGGER_SCOPE.kill(
+                self._logger
+            )
         if CONSOLE_LOGGER_SCOPE:
             CONSOLE_LOGGER_SCOPE.kill(
                 self._console_logger
