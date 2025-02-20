@@ -49,8 +49,8 @@ class Postpone:
         self._context = BuiltIn()._get_context()    # noqa, E501  pylint: disable=protected-access
         output = getattr(self._context, 'output', None)
         output_adapter = self._get_output_adapter(output)
-        logger = self._get_logger(output_adapter)
-        writer = self._get_writer(logger)
+        log = self._get_logger(output_adapter)
+        writer = self._get_writer(log)
         writer.start = self.postpone(writer.start)
         writer.end = self.postpone(writer.end)
         writer.element = self.postpone(writer.element)
@@ -63,8 +63,6 @@ class Postpone:
                 return getattr(output, p)
             except AttributeError:
                 pass
-        import sys
-        print(f"fallback output {type(output)}", file=sys.__stderr__)
         return output
 
     @staticmethod
@@ -76,19 +74,19 @@ class Postpone:
             except AttributeError:
                 pass
         raise RuntimeError(
-            'not rule to find logger => RF version not supported'
+            f'could not find logger in {type(output_adapter)}'
         )
 
     @staticmethod
-    def _get_writer(logger):
+    def _get_writer(log):
         """find writer"""
         for p in ['_writer']:
             try:
-                return getattr(logger, p)
+                return getattr(log, p)
             except AttributeError:
                 pass
         raise RuntimeError(
-            'no rule to find writer => RF version not supported'
+            f'could not find writer in {type(log)}'
         )
 
     def fork(self):
@@ -273,13 +271,10 @@ class ScopedContext:
                 scope = scope_parameter(
                     parent, parameter, forkvalue=forkvalue    # noqa, E501  pylint: disable=undefined-loop-variable
                 )
-                if not isinstance(self._context.namespace._kw_store.libraries,
-                                  ProtectedOrderedDict):
-                    self._context.namespace._kw_store.libraries = (
-                        ProtectedOrderedDict(
-                            self._context.namespace._kw_store.libraries
-                        )
-                    )
+                self._protect_property(
+                    self._context.namespace._kw_store,
+                    'libraries',
+                )
                 self._forks.append(scope.fork())
                 self._attributes[index] = attribute
                 break
@@ -288,6 +283,12 @@ class ScopedContext:
             self._logger = LOGGER_SCOPE.fork()
         if CONSOLE_LOGGER_SCOPE:
             self._console_logger = CONSOLE_LOGGER_SCOPE.fork()
+
+    @staticmethod
+    def _protect_property(obj, prop):
+        value = getattr(obj, prop)
+        if not isinstance(value, ProtectedOrderedDict):
+            setattr(obj, prop, ProtectedOrderedDict(value))
 
     def activate(self):
         '''
