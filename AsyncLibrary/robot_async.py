@@ -55,8 +55,7 @@ class Postpone:
             xmllogger = getattr(output_file, 'logger', None)
         else:
             xmllogger = getattr(output, '_xmllogger', None)
-        if xmllogger:
-            writer = getattr(xmllogger, '_writer', None)
+        writer = getattr(xmllogger, '_writer', None)
         if writer:
             writer.start = self.postpone(writer.start)
             writer.end = self.postpone(writer.end)
