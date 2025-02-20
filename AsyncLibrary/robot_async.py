@@ -48,18 +48,28 @@ class Postpone:
 
         self._context = BuiltIn()._get_context()    # noqa, E501  pylint: disable=protected-access
         output = getattr(self._context, 'output', None)
-        output_file = getattr(output, 'output_file', None)
-        if not output_file:
-            output_file = getattr(output, '_xml_logger', None)
-        if output_file:
-            xmllogger = getattr(output_file, 'logger', None)
-        else:
-            xmllogger = getattr(output, '_xmllogger', None)
+
+        output_adapter = None
+        for p in ['output_file', '_xml_logger']:
+            output_adapter = getattr(output, p, None)
+            if output_adapter:
+                break
+        if not output_adapter:
+            output_adapter = output
+
+        for p in ['logger', '_xmllogger', '_xml_logger']:
+            xmllogger = getattr(output_adapter, p, None)
+            if xmllogger:
+                break
+
+        assert xmllogger, 'RF version not supported'
+
         writer = getattr(xmllogger, '_writer', None)
-        if writer:
-            writer.start = self.postpone(writer.start)
-            writer.end = self.postpone(writer.end)
-            writer.element = self.postpone(writer.element)
+        assert writer, 'RF version not supported'
+
+        writer.start = self.postpone(writer.start)
+        writer.end = self.postpone(writer.end)
+        writer.element = self.postpone(writer.element)
 
     def fork(self):
         '''
