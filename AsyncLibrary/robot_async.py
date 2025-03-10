@@ -238,17 +238,18 @@ class ScopedContext:
         ['in_keyword_teardown'],
     ]
 
-    _construct = {
-        'test': None,
-        '_started_keywords': 0,
-        'timeout_occurred': False,
-        'in_suite_teardown': False,
-        'in_test_teardown': False,
-        'in_keyword_teardown': 0,
-    }
-
     def __init__(self):
         self._context = BuiltIn()._get_context()    # noqa, E501  pylint: disable=protected-access
+
+        construct = {
+            'test': None,
+            '_started_keywords': 0,
+            'timeout_occurred': self._context.timeout_occured,
+            'in_suite_teardown': self._context.in_suite_teardown,
+            'in_test_teardown': self._context.in_test_teardown,
+            'in_keyword_teardown': self._context.in_keyword_teardown,
+        }
+
         self._forks = []
         for index, attributelist in reversed(
                 tuple(enumerate(self._attributes))):
@@ -267,7 +268,7 @@ class ScopedContext:
                     if count <= 0:
                         raise
                     continue
-                forkvalue = self._construct.get(parameter, _UNDEFINED)    # noqa, E501  pylint: disable=undefined-loop-variable
+                forkvalue = construct.get(parameter, _UNDEFINED)    # noqa, E501  pylint: disable=undefined-loop-variable
                 scope = scope_parameter(
                     parent, parameter, forkvalue=forkvalue    # noqa, E501  pylint: disable=undefined-loop-variable
                 )
