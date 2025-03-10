@@ -244,10 +244,14 @@ class ScopedContext:
         construct = {
             'test': None,
             '_started_keywords': 0,
-            'timeout_occurred': getattr(self._context, 'timeout_occured', False),
-            'in_suite_teardown': getattr(self._context, 'in_suite_teardown', False),
-            'in_test_teardown': getattr(self._context, 'in_test_teardown', False),
-            'in_keyword_teardown': getattr(self._context, 'in_keyword_teardown', 0)
+            'timeout_occurred': getattr(
+                self._context, 'timeout_occured', False),
+            'in_suite_teardown': getattr(
+                self._context, 'in_suite_teardown', False),
+            'in_test_teardown': getattr(
+                self._context, 'in_test_teardown', False),
+            'in_keyword_teardown': getattr(
+                self._context, 'in_keyword_teardown', 0)
         }
 
         self._forks = []
