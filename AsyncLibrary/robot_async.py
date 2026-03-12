@@ -197,18 +197,21 @@ except AttributeError:
     pass
 
 CONSOLE_LOGGER_SCOPE = None
-if LOGGER._console_logger:    # pylint: disable=protected-access
+if (hasattr(LOGGER, "_console_logger") and LOGGER._console_logger) or (
+    hasattr(LOGGER, "_console") and LOGGER._console
+):  # pylint: disable=protected-access
+    logger = getattr(LOGGER, "_console_logger") if hasattr(LOGGER, "_console_logger") else getattr(LOGGER, "_console")
     try:
         CONSOLE_LOGGER_SCOPE = scope_parameter(
-            LOGGER._console_logger,    # noqa, E501  pylint: disable=protected-access
-            'started_keywords',
+            logger,  # noqa, E501  pylint: disable=protected-access
+            "started_keywords",
             forkvalue=0,
         )
     except AttributeError:
         try:
             CONSOLE_LOGGER_SCOPE = scope_parameter(
-                LOGGER._console_logger.logger,    # noqa, E501  pylint: disable=protected-access
-                '_started_keywords',
+                logger.logger,  # noqa, E501  pylint: disable=protected-access
+                "_started_keywords",
                 forkvalue=0,
             )
         except AttributeError:
