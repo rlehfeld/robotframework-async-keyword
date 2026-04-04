@@ -200,7 +200,7 @@ CONSOLE_LOGGER_SCOPE = None
 try:
     console_logger = LOGGER._console  # pylint: disable=protected-access
 except AttributeError:
-    console_logger = LOGGER._console_logger  # pylint: disable=protected-access
+    console_logger = LOGGER._console_logger  # pylint: disable=protected-access, disable=no-member
 
 if console_logger:
     try:
