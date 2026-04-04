@@ -22,7 +22,7 @@ Example
     ${expected}    Create List   ${3}   ${2}    ${1}
     Log To Console    ${expected}
 
-    Should Be True    $return_value == $expected
+    Should Be True    ${{ $return_value == $expected }}
 
     Run Keyword And Expect Error    should fail ${4}
     ...    Async Get    ${handle 4}
