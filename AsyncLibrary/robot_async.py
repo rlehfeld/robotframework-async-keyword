@@ -197,22 +197,29 @@ except AttributeError:
     pass
 
 CONSOLE_LOGGER_SCOPE = None
-if LOGGER._console_logger:    # pylint: disable=protected-access
+try:
+    console_logger = LOGGER._console  # pylint: disable=protected-access
+except AttributeError:
+    console_logger = LOGGER._console_logger  # pylint: disable=protected-access
+
+if console_logger:
     try:
         CONSOLE_LOGGER_SCOPE = scope_parameter(
-            LOGGER._console_logger,    # noqa, E501  pylint: disable=protected-access
+            console_logger,
             'started_keywords',
             forkvalue=0,
         )
     except AttributeError:
         try:
             CONSOLE_LOGGER_SCOPE = scope_parameter(
-                LOGGER._console_logger.logger,    # noqa, E501  pylint: disable=protected-access
+                console_logger.logger,
                 '_started_keywords',
                 forkvalue=0,
             )
         except AttributeError:
             pass
+
+del console_logger
 
 
 class ScopedContext:
