@@ -7,7 +7,7 @@ authors = [
     {name = 'René Lehfeld', email = '54720674+rlehfeld@users.noreply.github.com'},
 ]
 description = 'Generic Robot Framework library for asynchronous keyword execution'
-requires-python = '>=3.7'
+requires-python = '>=3.10'
 license = {text = 'MIT'}
 keywords = ['async', 'robotframework']
 classifiers = [

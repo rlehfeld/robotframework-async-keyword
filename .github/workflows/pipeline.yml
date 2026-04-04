@@ -17,7 +17,7 @@ jobs:
     strategy:
       matrix:
         os: [ 'ubuntu-latest' ]
-        python-version: [ '3.8', '3.9', '3.10', '3.11' ]
+        python-version: &PYTHON_VERSIONS ["3.10", "3.11", "3.12", "3.13", "3.14"]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -37,7 +37,7 @@ jobs:
     strategy:
       matrix:
         os: [ 'ubuntu-latest' ]
-        python-version: [ '3.8', '3.9', '3.10', '3.11' ]
+        python-version: *PYTHON_VERSIONS
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -55,9 +55,10 @@ jobs:
 
   robot-framework:
     strategy:
+      fail-fast: false
       matrix:
         os: [ 'ubuntu-latest', 'windows-latest' ]
-        python-version: [ '3.8', '3.9', '3.10', '3.11' ]
+        python-version: *PYTHON_VERSIONS
         robotframework-version: [ '5.0.1', '6.0.2', '6.1', '6.1.1', '7.0', '7.0.1', '7.2.2', 'latest' ]
     runs-on: ${{ matrix.os }}
     steps:
