@@ -172,8 +172,8 @@ class Postpone:
         writer = getattr(xmllogger, '_writer', None)
         if writer:
             writer.start = writer.start._original    # noqa, E501 pylint: disable=protected-access
-            writer.end = writer.end._original    # noqa, E501  pylint: disable=protected-access
-            writer.element = writer.element._original    # noqa, E501  pylint: disable=protected-access
+            writer.end = writer.end._original    # noqa, E501 pylint: disable=protected-access
+            writer.element = writer.element._original    # noqa, E501 pylint: disable=protected-access
 
     def __call__(self, postpone_id):
         self.activate(postpone_id)
@@ -200,7 +200,7 @@ CONSOLE_LOGGER_SCOPE = None
 try:
     console_logger = LOGGER._console  # pylint: disable=protected-access
 except AttributeError:
-    console_logger = LOGGER._console_logger  # pylint: disable=protected-access, disable=no-member
+    console_logger = LOGGER._console_logger  # noqa, E501 pylint: disable=protected-access, disable=no-member
 
 if console_logger:
     try:
